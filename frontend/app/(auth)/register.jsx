@@ -12,7 +12,7 @@ const SUBTLE = '#666666'
 const ROLE_OPTIONS = [
   { key: 'student', label: 'Student' },
   { key: 'institute', label: 'Institute' },
-  { key: 'professional', label: 'Industry Professional' },
+  { key: 'professional', label: 'Mentor' },
 ]
 
 const API_BASE = Constants?.expoConfig?.extra?.API_BASE || 'http://localhost:5000'
@@ -66,6 +66,12 @@ const Register = () => {
       })
       if (res.status === 201) {
         Alert.alert('Success', 'Registration complete. You can now log in.')
+        // Clear form fields after successful submission
+        setFullName('')
+        setEmail('')
+        setPassword('')
+        setRole('student')
+        setProfile({})
       }
     } catch (e) {
       const msg = e?.response?.data?.message || e.message
