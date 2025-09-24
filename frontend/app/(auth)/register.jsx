@@ -66,6 +66,12 @@ const Register = () => {
       })
       if (res.status === 201) {
         Alert.alert('Success', 'Registration complete. You can now log in.')
+        // Clear form fields after successful submission
+        setFullName('')
+        setEmail('')
+        setPassword('')
+        setRole('student')
+        setProfile({})
       }
     } catch (e) {
       const msg = e?.response?.data?.message || e.message
