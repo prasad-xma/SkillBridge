@@ -1,10 +1,11 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import React from 'react'
+import { Slot } from 'expo-router'
 
 const AuthLayout = () => {
   return (
-    <View>
-      <Text>AuthLayout</Text>
+    <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <Slot />
     </View>
   )
 }

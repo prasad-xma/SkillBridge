@@ -13,6 +13,9 @@ app.get('/', (req, res) => {
   res.send('Hello from the SkillBridge Backend!');
 });
 
+// Auth routes
+const authRoutes = require('./routes/authRoutes');
+app.use('/api/auth', authRoutes);
 
 
 
