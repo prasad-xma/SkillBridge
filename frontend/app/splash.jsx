@@ -3,6 +3,7 @@ import { View, Image, StyleSheet, Animated } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { router } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
+import { getSession } from '../lib/session'
 
 const AppSplash = () => {
   const fadeAnim = new Animated.Value(0)
@@ -24,10 +25,15 @@ const AppSplash = () => {
       }),
     ]).start()
 
-    // Navigate to home after 2.5 seconds
+    // Navigate after 2.5 seconds, respecting stored session
     const timer = setTimeout( async () => {
+      const session = await getSession()
       await SplashScreen.hideAsync()
-      router.replace('/')
+      if (session?.role === 'student') {
+        router.replace('/(student)/home')
+      } else {
+        router.replace('/')
+      }
     }, 2500)
 
     return () => clearTimeout(timer)
