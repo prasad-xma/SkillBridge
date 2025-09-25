@@ -2,8 +2,9 @@ import React, { useEffect } from 'react'
 import { View, Image, StyleSheet, Animated } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { router } from 'expo-router'
+import * as SplashScreen from 'expo-splash-screen'
 
-const SplashScreen = () => {
+const AppSplash = () => {
   const fadeAnim = new Animated.Value(0)
   const scaleAnim = new Animated.Value(0.8)
 
@@ -24,7 +25,8 @@ const SplashScreen = () => {
     ]).start()
 
     // Navigate to home after 2.5 seconds
-    const timer = setTimeout(() => {
+    const timer = setTimeout( async () => {
+      await SplashScreen.hideAsync()
       router.replace('/')
     }, 2500)
 
@@ -71,4 +73,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default SplashScreen
+export default AppSplash

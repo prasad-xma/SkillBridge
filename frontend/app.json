@@ -7,7 +7,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "initialRouteName": "splash",
     "extra": {
       "API_BASE": "http://192.168.8.138:5000"
     },
