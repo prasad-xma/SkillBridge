@@ -43,6 +43,12 @@ const RootLayout = () => {
             headerShown: false 
           }} 
         />
+        <Stack.Screen 
+          name="(student)" 
+          options={{ 
+            headerShown: false 
+          }} 
+        />
       </Stack>
     </View>
   )
