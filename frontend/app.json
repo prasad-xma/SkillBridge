@@ -8,7 +8,8 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "extra": {
-      "API_BASE": "http://192.168.8.138:5000"
+      "API_BASE": "http://192.168.8.138:5000",
+      "APP_THEME": "light"
     },
     "newArchEnabled": true,
     "splash": {

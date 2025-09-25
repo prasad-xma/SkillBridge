@@ -1,14 +1,10 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native'
-import React, { useState } from 'react'
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, useColorScheme } from 'react-native'
+import React, { useMemo, useState } from 'react'
 import axios from 'axios'
 import Constants from 'expo-constants'
 import { API_BASE as ENV_API_BASE } from '@env'
 import LoginSvg from '../../assets/auth/login_img.svg'
-
-const PRIMARY = '#6c63ff'
-const BG = '#ffffff'
-const TEXT = '#111111'
-const SUBTLE = '#666666'
+import { themes } from '../../constants/colors'
 
 const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || 'http://localhost:5000'
 
@@ -40,39 +36,42 @@ const Login = () => {
     }
   }
 
+  const colorScheme = useColorScheme()
+  const theme = useMemo(() => (colorScheme === 'dark' ? themes.dark : themes.light), [colorScheme])
+
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: BG }} contentContainerStyle={styles.container}>
+    <ScrollView style={{ flex: 1, backgroundColor: theme.background }} contentContainerStyle={styles.container}>
       <View style={styles.hero}>
         {typeof LoginSvg === 'function' ? (
           <LoginSvg width={220} height={220} />
         ) : null}
-        <Text style={styles.title}>Welcome back</Text>
-        <Text style={styles.subtitle}>Log in to continue learning</Text>
+        <Text style={[styles.title, { color: theme.text }]}>Welcome back</Text>
+        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Log in to continue learning</Text>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.label}>Email</Text>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <Text style={[styles.label, { color: theme.textSecondary }]}>Email</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { color: theme.text, backgroundColor: theme.card, borderColor: theme.border }]}
           placeholder="name@example.com"
-          placeholderTextColor={SUBTLE}
+          placeholderTextColor={theme.textSecondary}
           autoCapitalize="none"
           keyboardType="email-address"
           value={email}
           onChangeText={setEmail}
         />
 
-        <Text style={styles.label}>Password</Text>
+        <Text style={[styles.label, { color: theme.textSecondary }]}>Password</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { color: theme.text, backgroundColor: theme.card, borderColor: theme.border }]}
           placeholder="••••••••"
-          placeholderTextColor={SUBTLE}
+          placeholderTextColor={theme.textSecondary}
           secureTextEntry
           value={password}
           onChangeText={setPassword}
         />
 
-        <TouchableOpacity style={styles.button} onPress={onSubmit} disabled={loading}>
+        <TouchableOpacity style={[styles.button, { backgroundColor: theme.primary }]} onPress={onSubmit} disabled={loading}>
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
@@ -99,12 +98,12 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 24,
     fontWeight: '700',
-    color: TEXT,
+    color: '#111111',
   },
   subtitle: {
     marginTop: 6,
     fontSize: 14,
-    color: SUBTLE,
+    color: '#666666',
   },
   card: {
     backgroundColor: '#fff',
@@ -118,7 +117,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 6,
     fontSize: 14,
-    color: SUBTLE,
+    color: '#666666',
   },
   input: {
     borderWidth: 1,
@@ -127,12 +126,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 16,
-    color: TEXT,
+    color: '#111111',
     backgroundColor: '#fff'
   },
   button: {
     marginTop: 20,
-    backgroundColor: PRIMARY,
+    backgroundColor: '#6c63ff',
     borderRadius: 12,
     alignItems: 'center',
     paddingVertical: 14,
