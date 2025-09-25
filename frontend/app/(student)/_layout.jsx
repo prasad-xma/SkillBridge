@@ -1,11 +1,28 @@
-import React from 'react'
-import { Tabs } from 'expo-router'
-import { useColorScheme } from 'react-native'
+import React, { useEffect, useState } from 'react'
+import { Tabs, router } from 'expo-router'
+import { useColorScheme, View } from 'react-native'
 import { themes } from '../../constants/colors'
+import { getSession } from '../../lib/session'
 
 export default function StudentTabsLayout() {
   const colorScheme = useColorScheme()
   const theme = colorScheme === 'dark' ? themes.dark : themes.light
+  const [checked, setChecked] = useState(false)
+
+  useEffect(() => {
+    (async () => {
+      const s = await getSession()
+      if (!s || s.role !== 'student') {
+        router.replace('/login')
+        return
+      }
+      setChecked(true)
+    })()
+  }, [])
+
+  if (!checked) {
+    return <View style={{ flex: 1, backgroundColor: theme.background }} />
+  }
 
   return (
     <Tabs
