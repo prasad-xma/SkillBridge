@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 
 const Home = () => {
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['left', 'right']}>
       <StatusBar style="light" backgroundColor="#667eea" />
       <LinearGradient
         colors={['#667eea', '#764ba2']}
