@@ -5,6 +5,8 @@ import Constants from 'expo-constants'
 import { API_BASE as ENV_API_BASE } from '@env'
 import LoginSvg from '../../assets/auth/login_img.svg'
 import { themes } from '../../constants/colors'
+import { saveSession } from '../../lib/session'
+import { router } from 'expo-router'
 
 const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || 'http://localhost:5000'
 
@@ -22,11 +24,17 @@ const Login = () => {
     try {
       const res = await axios.post(`${API_BASE}/api/auth/login`, { email, password })
       if (res.status === 200) {
-        const { role, fullName } = res.data
-        Alert.alert('Welcome', `${fullName || 'User'} (${role || 'role'})`)
-        // Clear fields after success
-        setEmail('')
-        setPassword('')
+        const { role } = res.data
+        await saveSession(res.data)
+        if (role === 'student') {
+          router.replace('/(student)/home')
+        } else if (role === 'institute') {
+          Alert.alert('Info', 'Institute dashboard coming soon');
+        } else if (role === 'professional') {
+          Alert.alert('Info', 'Mentor dashboard coming soon');
+        } else {
+          Alert.alert('Login', 'Logged in')
+        }
       }
     } catch (e) {
       const msg = e?.response?.data?.message || e.message
