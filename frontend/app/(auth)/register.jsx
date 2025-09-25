@@ -2,6 +2,7 @@ import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, Activi
 import React, { useMemo, useState } from 'react'
 import axios from 'axios'
 import Constants from 'expo-constants'
+import { API_BASE as ENV_API_BASE } from '@env'
 import RegisterSvg from '../../assets/auth/register_img.svg'
 
 const PRIMARY = '#6c63ff'
@@ -15,7 +16,7 @@ const ROLE_OPTIONS = [
   { key: 'professional', label: 'Mentor' },
 ]
 
-const API_BASE = Constants?.expoConfig?.extra?.API_BASE || 'http://localhost:5000'
+const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || 'http://localhost:5000'
 
 const Register = () => {
   const [fullName, setFullName] = useState('')

@@ -2,6 +2,7 @@ import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, Activi
 import React, { useState } from 'react'
 import axios from 'axios'
 import Constants from 'expo-constants'
+import { API_BASE as ENV_API_BASE } from '@env'
 import LoginSvg from '../../assets/auth/login_img.svg'
 
 const PRIMARY = '#6c63ff'
@@ -9,7 +10,7 @@ const BG = '#ffffff'
 const TEXT = '#111111'
 const SUBTLE = '#666666'
 
-const API_BASE = Constants?.expoConfig?.extra?.API_BASE || 'http://localhost:5000'
+const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || 'http://localhost:5000'
 
 const Login = () => {
   const [email, setEmail] = useState('')
