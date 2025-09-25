@@ -3,6 +3,7 @@ import React, { useCallback } from 'react'
 import { Stack } from 'expo-router'
 import { themes } from '../constants/colors'
 import * as SplashScreen from 'expo-splash-screen' 
+import Constants from 'expo-constants'
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   
@@ -10,7 +11,9 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 
 const RootLayout = () => {
   const colorScheme = useColorScheme()
-  const theme = colorScheme === 'dark' ? themes.dark : themes.light
+  const forcedTheme = Constants?.expoConfig?.extra?.APP_THEME
+  const effectiveScheme = forcedTheme ? forcedTheme : colorScheme
+  const theme = effectiveScheme === 'dark' ? themes.dark : themes.light
 
   const onLayoutRootView = useCallback(async () => {
     try {
