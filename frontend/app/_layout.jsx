@@ -49,6 +49,18 @@ const RootLayout = () => {
             headerShown: false 
           }} 
         />
+        <Stack.Screen 
+          name="(institute)" 
+          options={{ 
+            headerShown: false 
+          }} 
+        />
+        <Stack.Screen 
+          name="(professional)" 
+          options={{ 
+            headerShown: false 
+          }} 
+        />
       </Stack>
     </View>
   )
