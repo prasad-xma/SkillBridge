@@ -2,8 +2,10 @@ import React, { useEffect } from 'react'
 import { View, Image, StyleSheet, Animated } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { router } from 'expo-router'
+import * as SplashScreen from 'expo-splash-screen'
+import { getSession } from '../lib/session'
 
-const SplashScreen = () => {
+const AppSplash = () => {
   const fadeAnim = new Animated.Value(0)
   const scaleAnim = new Animated.Value(0.8)
 
@@ -23,9 +25,19 @@ const SplashScreen = () => {
       }),
     ]).start()
 
-    // Navigate to home after 2.5 seconds
-    const timer = setTimeout(() => {
-      router.replace('/')
+    // Navigate after 2.5 seconds, respecting stored session
+    const timer = setTimeout( async () => {
+      const session = await getSession()
+      await SplashScreen.hideAsync()
+      if (session?.role === 'student') {
+        router.replace('/(student)/home')
+      } else if (session?.role === 'institute') {
+        router.replace('/(institute)/home')
+      } else if (session?.role === 'professional') {
+        router.replace('/(professional)/home')
+      } else {
+        router.replace('/')
+      }
     }, 2500)
 
     return () => clearTimeout(timer)
@@ -71,4 +83,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default SplashScreen
+export default AppSplash
