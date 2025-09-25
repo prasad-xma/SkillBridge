@@ -1,11 +1,20 @@
 import { StyleSheet, Text, View, TouchableOpacity, Image } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { router } from 'expo-router'
+import { getSession } from '../lib/session'
 import { LinearGradient } from 'expo-linear-gradient'
 
 const Home = () => {
+  useEffect(() => {
+    (async () => {
+      const s = await getSession()
+      if (s && s.role === 'student') {
+        router.replace('/(student)/home')
+      }
+    })()
+  }, [])
   return (
     <SafeAreaView style={styles.container} edges={['left', 'right']}>
       <StatusBar style="light" backgroundColor="#667eea" />
