@@ -31,6 +31,10 @@ const AppSplash = () => {
       await SplashScreen.hideAsync()
       if (session?.role === 'student') {
         router.replace('/(student)/home')
+      } else if (session?.role === 'institute') {
+        router.replace('/(institute)/home')
+      } else if (session?.role === 'professional') {
+        router.replace('/(professional)/home')
       } else {
         router.replace('/')
       }

@@ -29,9 +29,9 @@ const Login = () => {
         if (role === 'student') {
           router.replace('/(student)/home')
         } else if (role === 'institute') {
-          Alert.alert('Info', 'Institute dashboard coming soon');
+          router.replace('/(institute)/home')
         } else if (role === 'professional') {
-          Alert.alert('Info', 'Mentor dashboard coming soon');
+          router.replace('/(professional)/home')
         } else {
           Alert.alert('Login', 'Logged in')
         }
