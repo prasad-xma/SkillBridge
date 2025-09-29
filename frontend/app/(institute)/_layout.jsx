@@ -43,7 +43,7 @@ export default function InstituteLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-sharp" color={color} size={size} />
           ),
-        }}
+        }} 
       />
 
       <Tabs.Screen

@@ -13,7 +13,7 @@ import {
 import { themes } from "../../constants/colors";
 import { getSession } from "../../lib/session";
 import { useNavigation } from "@react-navigation/native";
-
+ 
 export default function InstituteHome() {
   const [user, setUser] = useState(null);
   const [courses, setCourses] = useState([]);
@@ -263,14 +263,14 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     padding: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 5,
-    elevation: 5,
-    marginBottom: 20,
+    // borderBottomLeftRadius: 20,
+    // borderBottomRightRadius: 20,
+    // shadowColor: "#000",
+    // shadowOpacity: 0.1,
+    // shadowOffset: { width: 0, height: 3 },
+    // shadowRadius: 5,
+    // elevation: 5,
+    // marginBottom: 20,
   },
   headerTitle: {
     fontSize: 26,
@@ -286,12 +286,12 @@ const styles = StyleSheet.create({
   },
   programCard: {
     padding: 16,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 5,
-    elevation: 2,
+    // borderRadius: 12,
+    // shadowColor: "#000",
+    // shadowOpacity: 0.05,
+    // shadowOffset: { width: 0, height: 2 },
+    // shadowRadius: 5,
+    // elevation: 2,
   },
   programRow: {
     flexDirection: "row",

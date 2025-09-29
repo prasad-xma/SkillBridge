@@ -142,7 +142,7 @@ async function listCourses(req, res) {
   } catch (error) {
     return res.status(500).json({ message: 'Failed to fetch courses', error: error.message });
   }
-}
+} 
 
 module.exports = {
   addCourse,

@@ -52,7 +52,7 @@ export default function EditCourse({ route, navigation }) {
     try {
       const session = await getSession();
       const token = session?.idToken;
-
+ 
       const response = await fetch(
         `http://192.168.1.4:5000/courses/update/${course._id}`,
         {

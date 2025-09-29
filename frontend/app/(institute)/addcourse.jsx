@@ -70,7 +70,7 @@ export default function AddCourse() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
-      });
+      }); 
 
       const data = await response.json();
 
@@ -106,19 +106,18 @@ export default function AddCourse() {
       />
 
       <TextInput
-  style={[
-    styles.textarea,
-    { color: theme.text, borderColor: theme.border },
-  ]}
-  placeholder="Description"
-  placeholderTextColor={theme.placeholder}
-  value={description}
-  onChangeText={setDescription}
-  multiline
-  textAlignVertical="top" // ensures text starts from the top
-  numberOfLines={5}       // sets default visible lines
-/>
-
+        style={[
+          styles.textarea,
+          { color: theme.text, borderColor: theme.border },
+        ]}
+        placeholder="Description"
+        placeholderTextColor={theme.placeholder}
+        value={description}
+        onChangeText={setDescription}
+        multiline
+        textAlignVertical="top" // ensures text starts from the top
+        numberOfLines={5} // sets default visible lines
+      />
 
       <TextInput
         style={[styles.input, { color: theme.text, borderColor: theme.border }]}
@@ -262,4 +261,3 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
-

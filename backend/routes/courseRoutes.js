@@ -15,7 +15,7 @@ router.post(
   '/add',
   upload.single('thumbnail'),
   courseController.addCourse
-);
+); 
 
 // Update existing course
 router.put(

@@ -49,7 +49,7 @@ export default function InstituteProfile() {
         <Text style={[styles.label, { color: theme.textSecondary }]}>Name</Text>
         <Text style={[styles.value, { color: theme.text }]}>
           {user?.fullName}
-        </Text>
+        </Text> 
 
         <Text style={[styles.label, { color: theme.textSecondary }]}>
           Email
