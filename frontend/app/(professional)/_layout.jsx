@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Stack, router } from 'expo-router'
+import { Stack, router, Tabs } from 'expo-router'
 import { getSession } from '../../lib/session'
 
 export default function ProfessionalLayout() {
@@ -19,9 +19,20 @@ export default function ProfessionalLayout() {
   if (!checked) return null
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="home" />
-    </Stack>
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: theme.primary,
+        tabBarInactiveTintColor: theme.textSecondary,
+        tabBarStyle: { backgroundColor: theme.card, borderTopColor: theme.border },
+        headerStyle: { backgroundColor: theme.card },
+        headerTitleStyle: { color: theme.text },
+      }}
+    >
+      <Tabs.Screen name="home" options={{ title: 'Home' }} />
+      <Tabs.Screen name="network" options={{ title: 'Network' }} />
+      <Tabs.Screen name="jobs" options={{ title: 'Jobs' }} />
+      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+    </Tabs>
   )
 }
 

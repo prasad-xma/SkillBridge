@@ -1,28 +1,44 @@
-import React, { useEffect, useState } from 'react'
-import { Stack, router } from 'expo-router'
-import { getSession } from '../../lib/session'
+import React, { useEffect, useState } from "react";
+import { Stack, router, Tabs } from "expo-router";
+import { getSession } from "../../lib/session";
+import { themes } from "../../constants/colors";
+import { useColorScheme, View } from "react-native";
 
 export default function InstituteLayout() {
-  const [checked, setChecked] = useState(false)
+  const [checked, setChecked] = useState(false);
+  const colorScheme = useColorScheme();
+  const theme = colorScheme === "dark" ? themes.dark : themes.light;
 
   useEffect(() => {
     (async () => {
-      const s = await getSession()
-      if (!s || s.role !== 'institute') {
-        router.replace('/login')
-        return
+      const s = await getSession();
+      if (!s || s.role !== "institute") {
+        router.replace("/login");
+        return;
       }
-      setChecked(true)
-    })()
-  }, [])
+      setChecked(true);
+    })();
+  }, []);
 
-  if (!checked) return null
+  if (!checked) return null;
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="home" />
-    </Stack>
-  )
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: theme.primary,
+        tabBarInactiveTintColor: theme.textSecondary,
+        tabBarStyle: {
+          backgroundColor: theme.card,
+          borderTopColor: theme.border,
+        },
+        headerStyle: { backgroundColor: theme.card },
+        headerTitleStyle: { color: theme.text },
+      }}
+    >
+      <Tabs.Screen name="home" options={{ title: "Home" }} />
+      {/* <Tabs.Screen name="network" options={{ title: 'Network' }} />
+      <Tabs.Screen name="jobs" options={{ title: 'Jobs' }} /> */}
+      <Tabs.Screen name="profile" options={{ title: "Profile" }} />
+    </Tabs>
+  );
 }
-
-
