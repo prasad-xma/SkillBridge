@@ -17,6 +17,10 @@ app.get('/', (req, res) => {
 const authRoutes = require('./routes/authRoutes');
 app.use('/api/auth', authRoutes);
 
+// Register course routes
+const courseRoutes = require('./routes/courseRoutes');
+app.use('/courses', courseRoutes);
+
 
 
 

@@ -1,54 +1,102 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, useColorScheme } from "react-native";
-import { themes } from '../../constants/colors'
+import { Ionicons } from "@expo/vector-icons";
+
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  useColorScheme,
+  TouchableOpacity,
+  Dimensions,
+} from "react-native";
+import { themes } from "../../constants/colors";
 import { getSession } from "../../lib/session";
+import { useNavigation } from "@react-navigation/native";
 
 export default function InstituteHome() {
   const [user, setUser] = useState(null);
-    const scheme = useColorScheme()
-    const theme = scheme === 'dark' ? themes.dark : themes.light
+  const [courses, setCourses] = useState([]);
+  const scheme = useColorScheme();
+  const theme = scheme === "dark" ? themes.dark : themes.light;
+  const navigation = useNavigation();
+
+  const deviceWidth = Dimensions.get("window").width - 30; // padding adjustment
 
   useEffect(() => {
     (async () => {
       const s = await getSession();
       setUser(s);
+
+      // Fetch courses from backend (replace with your backend URL)
+      try {
+        const response = await fetch("http://192.168.1.4:5000/courses");
+        const data = await response.json();
+        if (response.ok) setCourses(data);
+      } catch (error) {
+        console.log("Error fetching courses:", error);
+      }
     })();
   }, []);
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Institute Dashboard</Text>
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.background }]}
+    >
+      <Text style={[styles.title, { color: theme.text }]}>
+        Institute Details
+      </Text>
 
-      {user ? (
-        <Text style={styles.welcomeText}>Welcome, {user.fullName}</Text>
-      ) : null}
-
-      
+      {user && (
+        <Text style={[styles.welcomeText, { color: theme.text }]}>
+          Welcome, {user.fullName}
+        </Text>
+      )}
 
       {/* Program Overview */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Program Overview</Text>
-        <View style={styles.row}>
-          <Text style={styles.label}>Total Courses:</Text>
-          <Text style={styles.value}>8</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Active Enrollments:</Text>
-          <Text style={styles.value}>152</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Ongoing Batches:</Text>
-          <Text style={styles.value}>5</Text>
+      <View style={[styles.card, { backgroundColor: theme.card }]}>
+        <Text style={[styles.cardTitle, { color: theme.text }]}>
+          Program Overview
+        </Text>
+
+        <View style={styles.overviewRow}>
+          <Ionicons
+            name="bookmarks-sharp"
+            size={24}
+            color="#007bff"
+            style={{ marginRight: 10 }}
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.label, { color: theme.textSecondary }]}>
+              Total Courses
+            </Text>
+            <Text style={[styles.value, { color: theme.primary }]}>
+              {courses.length}
+            </Text>
+          </View>
         </View>
       </View>
 
-      {/* Quick Actions */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Quick Actions</Text>
-        <Text style={styles.action}>➕ Add New Course</Text>
-        <Text style={styles.action}>👥 Manage Students</Text>
-        <Text style={styles.action}>📊 View Reports & Analytics</Text>
-      </View>
+      {/* Courses List */}
+      {courses.map((course) => (
+        <View
+          key={course._id}
+          style={[
+            styles.courseCard,
+            { width: deviceWidth, backgroundColor: "#fff" },
+          ]}
+        >
+          <Text style={styles.courseName}>{course.courseName}</Text>
+          <Text style={styles.courseDuration}>Duration: {course.duration}</Text>
+          <Text style={styles.courseFee}>Fee: ${course.fees}</Text>
+
+          <TouchableOpacity
+          // onPress={() => navigation.navigate("CourseDetails", { courseId: course._id })}
+          >
+            <Text style={styles.readMore}>Read more &gt;</Text>
+          </TouchableOpacity>
+        </View>
+      ))}
     </ScrollView>
   );
 }
@@ -56,60 +104,102 @@ export default function InstituteHome() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f4f6f9",
     padding: 15,
+    backgroundColor: "#f4f6f9",
   },
+
   title: {
     fontSize: 22,
     fontWeight: "bold",
     marginBottom: 10,
     textAlign: "center",
-    color: "#222",
   },
+
   welcomeText: {
     fontSize: 16,
     textAlign: "center",
     marginBottom: 20,
-    color: "#444",
   },
+
+  /* General Card */
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 20,
+    marginHorizontal: 16,
+    padding: 20,
+    borderRadius: 12,
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 5,
     elevation: 3,
+    marginBottom: 20,
+    backgroundColor: "#fff",
   },
+
   cardTitle: {
     fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 10,
+    fontWeight: "700",
+    marginBottom: 15,
+  },
+
+  overviewRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+
+  label: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#555",
+  },
+
+  value: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#222",
+  },
+
+  /* Course Card */
+  courseCard: {
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 15,
+    height: 150, // fixed height
+    justifyContent: "space-between",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 5,
+    elevation: 3,
+    backgroundColor: "#fff",
+  },
+
+  courseName: {
+    fontSize: 20,
+    fontWeight: "700",
     borderBottomWidth: 1,
     borderBottomColor: "#ddd",
     paddingBottom: 5,
   },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  label: {
+
+  courseDuration: {
     fontSize: 14,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  value: {
-    fontSize: 14,
+    marginTop: 5,
     color: "#555",
-    maxWidth: "60%",
-    textAlign: "right",
   },
-  action: {
-    fontSize: 14,
-    paddingVertical: 5,
+
+  courseFee: {
+    fontSize: 18,
+    color: "#ff4d4f",
+    fontWeight: "700",
+  },
+
+  readMore: {
     color: "#007bff",
+    fontWeight: "700",
+    marginTop: 5,
   },
 });
+
