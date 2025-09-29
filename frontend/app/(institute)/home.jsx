@@ -43,36 +43,40 @@ export default function InstituteHome() {
     <ScrollView
       style={[styles.container, { backgroundColor: theme.background }]}
     >
-      <Text style={[styles.title, { color: theme.text }]}>
-        Institute Details
-      </Text>
-
-      {user && (
-        <Text style={[styles.welcomeText, { color: theme.text }]}>
-          Welcome, {user.fullName}
-        </Text>
-      )}
-
-      {/* Program Overview */}
-      <View style={[styles.card, { backgroundColor: theme.card }]}>
-        <Text style={[styles.cardTitle, { color: theme.text }]}>
-          Program Overview
+      <View style={[styles.headerContainer, { backgroundColor: theme.card }]}>
+        {/* Header Title */}
+        <Text style={[styles.headerTitle, { color: theme.text }]}>
+          Institute Details
         </Text>
 
-        <View style={styles.overviewRow}>
-          <Ionicons
-            name="bookmarks-sharp"
-            size={24}
-            color="#007bff"
-            style={{ marginRight: 10 }}
-          />
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.label, { color: theme.textSecondary }]}>
-              Total Courses
-            </Text>
-            <Text style={[styles.value, { color: theme.primary }]}>
-              {courses.length}
-            </Text>
+        {/* Welcome User */}
+        {user && (
+          <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
+            Welcome, {user.fullName}
+          </Text>
+        )}
+
+        {/* Program Overview Card */}
+        <View
+          style={[styles.programCard, { backgroundColor: theme.background }]}
+        >
+          <View style={styles.programRow}>
+            <Ionicons
+              name="bookmarks-sharp"
+              size={28}
+              color="#007bff"
+              style={{ marginRight: 12 }}
+            />
+            <View style={{ flex: 1 }}>
+              <Text
+                style={[styles.programLabel, { color: theme.textSecondary }]}
+              >
+                Total Courses
+              </Text>
+              <Text style={[styles.programValue, { color: theme.primary }]}>
+                {courses.length}
+              </Text>
+            </View>
           </View>
         </View>
       </View>
@@ -90,11 +94,37 @@ export default function InstituteHome() {
           <Text style={styles.courseDuration}>Duration: {course.duration}</Text>
           <Text style={styles.courseFee}>Fee: ${course.fees}</Text>
 
-          <TouchableOpacity
-          // onPress={() => navigation.navigate("CourseDetails", { courseId: course._id })}
-          >
-            <Text style={styles.readMore}>Read more &gt;</Text>
-          </TouchableOpacity>
+          {/* Action Buttons */}
+          <View style={styles.courseActions}>
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={() => onEditCourse(course._id)}
+            >
+              <Ionicons name="create-outline" size={20} color="#007bff" />
+              <Text style={styles.actionText}>Edit</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={() => onDeleteCourse(course._id)}
+            >
+              <Ionicons name="trash-sharp" size={20} color="#ff4d4f" />
+              <Text style={styles.actionText}>Delete</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.readMoreContainer}
+              // onPress={() => navigation.navigate("CourseDetails", { courseId: course._id })}
+            >
+              <Text style={styles.readMoreText}>Read more</Text>
+              <Ionicons
+                name="arrow-forward-outline"
+                size={18}
+                color="#007bff"
+                style={{ marginLeft: 4 }}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
       ))}
     </ScrollView>
@@ -106,6 +136,26 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 15,
     backgroundColor: "#f4f6f9",
+  },
+  courseActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 10,
+  },
+
+  actionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+  },
+
+  actionText: {
+    marginLeft: 5,
+    fontWeight: "600",
+    fontSize: 14,
   },
 
   title: {
@@ -119,6 +169,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
     marginBottom: 20,
+  },
+  readMoreContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+  },
+  readMoreText: {
+    color: "#007bff",
+    fontWeight: "700",
+    fontSize: 14,
   },
 
   /* General Card */
@@ -201,5 +261,49 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginTop: 5,
   },
+  headerContainer: {
+    padding: 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 5,
+    elevation: 5,
+    marginBottom: 20,
+  },
+  headerTitle: {
+    fontSize: 26,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 6,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 14,
+  },
+  programCard: {
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  programRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  programLabel: {
+    fontSize: 14,
+    fontWeight: "500",
+    marginBottom: 2,
+  },
+  programValue: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
 });
-
