@@ -12,7 +12,14 @@ app.use(express.json());
 app.get('/', (req, res) => {
   res.send('Hello from the SkillBridge Backend!');
 });
+ 
+// Auth routes
+const authRoutes = require('./routes/authRoutes');
+app.use('/api/auth', authRoutes);
 
+// Register course routes
+const courseRoutes = require('./routes/courseRoutes');
+app.use('/courses', courseRoutes);
 
 
 
