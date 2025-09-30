@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@expo/vector-icons": "^15.0.2",
+    "expo-image-picker": "^17.0.8",
+    "multer": "^2.0.2"
+  }
+}
