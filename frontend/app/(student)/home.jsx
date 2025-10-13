@@ -56,7 +56,7 @@ export default function StudentHome() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
+  container: { flex: 1, padding: 16, paddingTop: 42 },
   hero: {
     borderRadius: 16,
     borderWidth: 1,
