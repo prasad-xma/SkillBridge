@@ -28,11 +28,10 @@ export default function StudentTabsLayout() {
   return (
     <Tabs
       screenOptions={{
+        headerShown: false,
         tabBarActiveTintColor: theme.primary,
         tabBarInactiveTintColor: theme.textSecondary,
         tabBarStyle: { backgroundColor: theme.card, borderTopColor: theme.border },
-        headerStyle: { backgroundColor: theme.card },
-        headerTitleStyle: { color: theme.text },
       }}
     >
       <Tabs.Screen
