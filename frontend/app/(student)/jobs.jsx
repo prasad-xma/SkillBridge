@@ -15,7 +15,7 @@ export default function StudentJobs() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
+  container: { flex: 1, padding: 16, paddingTop: 42 },
   title: { fontSize: 20, fontWeight: '700', marginBottom: 10 },
 })
 
