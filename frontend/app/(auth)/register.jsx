@@ -1,21 +1,18 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native'
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, useColorScheme } from 'react-native'
 import React, { useMemo, useState } from 'react'
 import axios from 'axios'
 import Constants from 'expo-constants'
+import { API_BASE as ENV_API_BASE } from '@env'
 import RegisterSvg from '../../assets/auth/register_img.svg'
-
-const PRIMARY = '#6c63ff'
-const BG = '#ffffff'
-const TEXT = '#111111'
-const SUBTLE = '#666666'
+import { themes } from '../../constants/colors'
 
 const ROLE_OPTIONS = [
   { key: 'student', label: 'Student' },
   { key: 'institute', label: 'Institute' },
-  { key: 'professional', label: 'Industry Professional' },
+  { key: 'professional', label: 'Mentor' },
 ]
 
-const API_BASE = Constants?.expoConfig?.extra?.API_BASE || 'http://localhost:5000'
+const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || 'http://localhost:5000'
 
 const Register = () => {
   const [fullName, setFullName] = useState('')
@@ -66,6 +63,12 @@ const Register = () => {
       })
       if (res.status === 201) {
         Alert.alert('Success', 'Registration complete. You can now log in.')
+        // Clear form fields after successful submission
+        setFullName('')
+        setEmail('')
+        setPassword('')
+        setRole('student')
+        setProfile({})
       }
     } catch (e) {
       const msg = e?.response?.data?.message || e.message
@@ -79,56 +82,59 @@ const Register = () => {
     setProfile(prev => ({ ...prev, [key]: value }))
   }
 
+  const colorScheme = useColorScheme()
+  const theme = useMemo(() => (colorScheme === 'dark' ? themes.dark : themes.light), [colorScheme])
+
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: BG }} contentContainerStyle={styles.container}>
+    <ScrollView style={{ flex: 1, backgroundColor: theme.background }} contentContainerStyle={styles.container}>
       <View style={styles.hero}>
         {typeof RegisterSvg === 'function' ? (
           <RegisterSvg width={220} height={220} />
         ) : null}
-        <Text style={styles.title}>Create your account</Text>
-        <Text style={styles.subtitle}>Join SkillBridge to learn and connect</Text>
+        <Text style={[styles.title, { color: theme.text }]}>Create your account</Text>
+        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Join SkillBridge to learn and connect</Text>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.label}>Full Name</Text>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <Text style={[styles.label, { color: theme.textSecondary }]}>Full Name</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { color: theme.text, backgroundColor: theme.card, borderColor: theme.border }]}
           placeholder="John Doe"
-          placeholderTextColor={SUBTLE}
+          placeholderTextColor={theme.textSecondary}
           value={fullName}
           onChangeText={setFullName}
         />
 
-        <Text style={styles.label}>Email</Text>
+        <Text style={[styles.label, { color: theme.textSecondary }]}>Email</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { color: theme.text, backgroundColor: theme.card, borderColor: theme.border }]}
           placeholder="name@example.com"
-          placeholderTextColor={SUBTLE}
+          placeholderTextColor={theme.textSecondary}
           autoCapitalize="none"
           keyboardType="email-address"
           value={email}
           onChangeText={setEmail}
         />
 
-        <Text style={styles.label}>Password</Text>
+        <Text style={[styles.label, { color: theme.textSecondary }]}>Password</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { color: theme.text, backgroundColor: theme.card, borderColor: theme.border }]}
           placeholder="••••••••"
-          placeholderTextColor={SUBTLE}
+          placeholderTextColor={theme.textSecondary}
           secureTextEntry
           value={password}
           onChangeText={setPassword}
         />
 
-        <Text style={styles.label}>Role</Text>
+        <Text style={[styles.label, { color: theme.textSecondary }]}>Role</Text>
         <View style={styles.roleRow}>
           {ROLE_OPTIONS.map(opt => (
             <TouchableOpacity
               key={opt.key}
-              style={[styles.roleChip, role === opt.key && styles.roleChipActive]}
+              style={[styles.roleChip, { backgroundColor: theme.card, borderColor: theme.border }, role === opt.key && { backgroundColor: theme.primary + '22', borderColor: theme.primary }]}
               onPress={() => setRole(opt.key)}
             >
-              <Text style={[styles.roleChipText, role === opt.key && styles.roleChipTextActive]}>
+              <Text style={[styles.roleChipText, { color: theme.textSecondary }, role === opt.key && { color: theme.primary, fontWeight: '600' }]}>
                 {opt.label}
               </Text>
             </TouchableOpacity>
@@ -137,18 +143,18 @@ const Register = () => {
 
         {roleFields.map(field => (
           <View key={field.name}>
-            <Text style={styles.label}>{field.label}</Text>
+            <Text style={[styles.label, { color: theme.textSecondary }]}>{field.label}</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: theme.text, backgroundColor: theme.card, borderColor: theme.border }]}
               placeholder={field.label}
-              placeholderTextColor={SUBTLE}
+              placeholderTextColor={theme.textSecondary}
               value={profile[field.name] || ''}
               onChangeText={(t) => updateProfile(field.name, t)}
             />
           </View>
         ))}
 
-        <TouchableOpacity style={styles.button} onPress={onSubmit} disabled={loading}>
+        <TouchableOpacity style={[styles.button, { backgroundColor: theme.primary }]} onPress={onSubmit} disabled={loading}>
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
@@ -175,12 +181,12 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 24,
     fontWeight: '700',
-    color: TEXT,
+    color: '#111111',
   },
   subtitle: {
     marginTop: 6,
     fontSize: 14,
-    color: SUBTLE,
+    color: '#666666',
   },
   card: {
     backgroundColor: '#fff',
@@ -194,7 +200,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 6,
     fontSize: 14,
-    color: SUBTLE,
+    color: '#666666',
   },
   input: {
     borderWidth: 1,
@@ -203,7 +209,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 16,
-    color: TEXT,
+    color: '#111111',
     backgroundColor: '#fff'
   },
   roleRow: {
@@ -218,20 +224,12 @@ const styles = StyleSheet.create({
     borderColor: '#e5e5e5',
     backgroundColor: '#fff'
   },
-  roleChipActive: {
-    backgroundColor: PRIMARY + '22',
-    borderColor: PRIMARY,
-  },
-  roleChipText: {
-    color: SUBTLE,
-  },
-  roleChipTextActive: {
-    color: PRIMARY,
-    fontWeight: '600',
-  },
+  roleChipActive: {},
+  roleChipText: {},
+  roleChipTextActive: {},
   button: {
     marginTop: 20,
-    backgroundColor: PRIMARY,
+    backgroundColor: '#6c63ff',
     borderRadius: 12,
     alignItems: 'center',
     paddingVertical: 14,
