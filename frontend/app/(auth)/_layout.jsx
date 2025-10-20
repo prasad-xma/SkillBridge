@@ -10,6 +10,7 @@ export default function AuthLayout() {
       if (s.role === 'student') router.replace('/(student)/home')
       else if (s.role === 'institute') router.replace('/(institute)/home')
       else if (s.role === 'professional') router.replace('/(professional)/home')
+      else if (s.role === 'recruiter') router.replace('/(recruiter)/home')
     })()
   }, [])
   return (
