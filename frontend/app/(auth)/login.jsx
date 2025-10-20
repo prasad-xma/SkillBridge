@@ -34,6 +34,8 @@ const Login = () => {
           router.replace('/(institute)/home')
         } else if (role === 'professional') {
           router.replace('/(professional)/home')
+        } else if (role === 'recruiter') {
+          router.replace('/(recruiter)/home')
         } else {
           Alert.alert('Login', 'Logged in')
         }
