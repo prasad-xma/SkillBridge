@@ -61,6 +61,12 @@ const RootLayout = () => {
             headerShown: false 
           }} 
         />
+        <Stack.Screen 
+          name="(recruiter)" 
+          options={{ 
+            headerShown: false 
+          }} 
+        />
       </Stack>
     </View>
   )
