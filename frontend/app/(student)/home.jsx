@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { View, Text, StyleSheet, useColorScheme, TouchableOpacity } from 'react-native'
 import Ionicons from '@expo/vector-icons/Ionicons'
+import { LinearGradient } from 'expo-linear-gradient'
 import { themes } from '../../constants/colors'
 import { getSession } from '../../lib/session'
 import { router } from 'expo-router'
@@ -49,9 +50,39 @@ export default function StudentHome() {
         </View>
       </View>
 
-      <View style={styles.suggestions}>
-        <Text style={[styles.suggestionText, { color: theme.textSecondary }]}>Start by checking your courses or browse recommendations.</Text>
+      <View style={styles.quickRow}>
+        <TouchableOpacity style={[styles.quickChip, { backgroundColor: theme.surface, borderColor: theme.border }]} onPress={() => router.push('/(student)/recommendations')}>
+          <View style={[styles.quickIconWrap, { backgroundColor: theme.primary + '1A' }]}>
+            <Ionicons name="sparkles" size={18} color={theme.primary} />
+          </View>
+          <Text style={[styles.quickLabel, { color: theme.text }]}>Recommendations</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.quickChip, { backgroundColor: theme.surface, borderColor: theme.border }]} onPress={() => router.push('/(student)/network')}>
+          <View style={[styles.quickIconWrap, { backgroundColor: theme.accent + '1A' }]}>
+            <Ionicons name="people-outline" size={18} color={theme.accent} />
+          </View>
+          <Text style={[styles.quickLabel, { color: theme.text }]}>Network</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.quickChip, { backgroundColor: theme.surface, borderColor: theme.border }]} onPress={() => router.push('/(student)/jobs')}>
+          <View style={[styles.quickIconWrap, { backgroundColor: theme.tint + '1A' }]}>
+            <Ionicons name="briefcase-outline" size={18} color={theme.tint} />
+          </View>
+          <Text style={[styles.quickLabel, { color: theme.text }]}>Jobs</Text>
+        </TouchableOpacity>
       </View>
+
+      <LinearGradient colors={[theme.heroFrom, theme.heroTo]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.showcaseCard}>
+        <View style={styles.showcaseArt} />
+        <View style={styles.showcaseArtSm} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.showcaseTitle}>Level up faster</Text>
+          <Text style={styles.showcaseSubtitle}>Explore curated learning paths crafted for you</Text>
+        </View>
+        <TouchableOpacity style={[styles.showcaseBtn, { backgroundColor: '#ffffff22', borderColor: '#ffffff44' }]} onPress={() => router.push('/(student)/recommendations')}>
+          <Ionicons name="arrow-forward" size={16} color="#fff" />
+          <Text style={styles.showcaseBtnText}>Explore</Text>
+        </TouchableOpacity>
+      </LinearGradient>
 
       <View style={[styles.ctaCard, { backgroundColor: theme.card, borderColor: theme.border }]}> 
         <View style={{ flex: 1 }}> 
@@ -93,8 +124,20 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14, marginTop: 8 },
   sparklesRow: { flexDirection: 'row', gap: 8, marginTop: 16 },
   spark: { width: 14, height: 14, borderRadius: 10 },
-  suggestions: { marginTop: 18 },
-  suggestionText: { fontSize: 13 },
+  suggestions: { marginTop: 0 },
+  suggestionText: { fontSize: 0 },
+  quickRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
+  quickChip: { flex: 1, borderWidth: 1, borderRadius: 14, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  quickIconWrap: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  quickLabel: { fontSize: 13, fontWeight: '700' },
+  showcaseCard: { marginTop: 16, borderRadius: 18, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, overflow: 'hidden',
+    shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 6 },
+  showcaseArt: { position: 'absolute', right: -20, top: -20, width: 120, height: 120, borderRadius: 60, backgroundColor: '#ffffff22' },
+  showcaseArtSm: { position: 'absolute', right: 30, bottom: -10, width: 60, height: 60, borderRadius: 30, backgroundColor: '#ffffff18' },
+  showcaseTitle: { color: '#fff', fontSize: 18, fontWeight: '800' },
+  showcaseSubtitle: { color: '#fff', opacity: 0.9, fontSize: 13, marginTop: 6 },
+  showcaseBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1 },
+  showcaseBtnText: { color: '#fff', fontWeight: '800' },
   ctaCard: {
     marginTop: 18,
     borderRadius: 16,
