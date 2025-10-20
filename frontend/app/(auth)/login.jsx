@@ -1,5 +1,7 @@
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, useColorScheme } from 'react-native'
 import React, { useMemo, useState } from 'react'
+import { Link } from 'expo-router'
+
 import axios from 'axios'
 import Constants from 'expo-constants'
 import { API_BASE as ENV_API_BASE } from '@env'
@@ -86,6 +88,10 @@ const Login = () => {
             <Text style={styles.buttonText}>Login</Text>
           )}
         </TouchableOpacity>
+        <View style={styles.linkRow}>
+          <Text style={[styles.linkLabel, { color: theme.textSecondary }]}>Don't have an account?</Text>
+          <Link href="/(auth)/register" style={[styles.linkText, { color: theme.primary }]}>Register</Link>
+        </View>
       </View>
     </ScrollView>
   )
@@ -148,5 +154,20 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
+  },
+  linkRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 4,
+    marginTop: 16,
+  },
+  linkLabel: {
+    fontSize: 14,
+    color: '#666666',
+  },
+  linkText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6c63ff',
   },
 })
