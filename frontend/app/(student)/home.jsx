@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, useColorScheme } from 'react-native'
+import { View, Text, StyleSheet, useColorScheme, TouchableOpacity } from 'react-native'
+import Ionicons from '@expo/vector-icons/Ionicons'
 import { themes } from '../../constants/colors'
 import { getSession } from '../../lib/session'
 import { router } from 'expo-router'
@@ -51,6 +52,21 @@ export default function StudentHome() {
       <View style={styles.suggestions}>
         <Text style={[styles.suggestionText, { color: theme.textSecondary }]}>Start by checking your courses or browse recommendations.</Text>
       </View>
+
+      <View style={[styles.ctaCard, { backgroundColor: theme.card, borderColor: theme.border }]}> 
+        <View style={{ flex: 1 }}> 
+          <Text style={[styles.ctaTitle, { color: theme.text }]}>Get Personalized Skill Recommendations</Text>
+          <Text style={[styles.ctaSubtitle, { color: theme.textSecondary }]}>Take a quick 2-minute quiz so we can tailor suggestions to you.</Text>
+        </View> 
+        <TouchableOpacity
+          style={[styles.ctaButton, { backgroundColor: theme.primary }]}
+          activeOpacity={0.85}
+          onPress={() => router.push('/(student)/questionnaire')}
+        >
+          <Ionicons name="sparkles" size={18} color="#fff" />
+          <Text style={styles.ctaButtonText}>Start Quiz</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   )
 }
@@ -79,6 +95,26 @@ const styles = StyleSheet.create({
   spark: { width: 14, height: 14, borderRadius: 10 },
   suggestions: { marginTop: 18 },
   suggestionText: { fontSize: 13 },
+  ctaCard: {
+    marginTop: 18,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  ctaTitle: { fontSize: 16, fontWeight: '800' },
+  ctaSubtitle: { fontSize: 13, marginTop: 6 },
+  ctaButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  ctaButtonText: { color: '#fff', fontWeight: '800' },
 })
 
 

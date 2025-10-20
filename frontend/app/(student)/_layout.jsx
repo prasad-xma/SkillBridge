@@ -70,6 +70,20 @@ export default function StudentTabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="questionnaire"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="recommendations"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
     </Tabs>
   )
 }
