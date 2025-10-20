@@ -57,7 +57,7 @@ const Home = () => {
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
               style={styles.primaryButton}
-              onPress={() => router.push('/register')}
+              onPress={() => router.push('/login')}
               activeOpacity={0.8}
             >
               <Text style={styles.primaryButtonText}>Get Started</Text>
@@ -65,10 +65,10 @@ const Home = () => {
             
             <TouchableOpacity 
               style={styles.secondaryButton}
-              onPress={() => router.push('/login')}
+              onPress={() => router.push('/register')}
               activeOpacity={0.8}
             >
-              <Text style={styles.secondaryButtonText}>Already have an account?</Text>
+              <Text style={styles.secondaryButtonText}>Still not have an account?</Text>
             </TouchableOpacity>
           </View>
         </View>

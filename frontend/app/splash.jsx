@@ -45,7 +45,7 @@ const AppSplash = () => {
 
   return (
     <LinearGradient
-      colors={['#667eea', '#764ba2']}
+      colors={['#667eea', '#ffffffff']}
       style={styles.container}
     >
       <Animated.View

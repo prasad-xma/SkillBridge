@@ -5,7 +5,7 @@
     "slug": "frontend",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/logo/logo_light.png",
     "userInterfaceStyle": "light",
     "extra": {
       "API_BASE": "http://192.168.8.138:5000",
@@ -22,13 +22,13 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/logo/logo_dark.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/logo/logo_light.png"
     },
     "plugins": [
       "expo-router"
