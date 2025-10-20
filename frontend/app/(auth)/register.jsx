@@ -12,6 +12,7 @@ const ROLE_OPTIONS = [
   { key: 'student', label: 'Student' },
   { key: 'institute', label: 'Institute' },
   { key: 'professional', label: 'Mentor' },
+  { key: 'recruiter', label: 'Recruiter' },
 ]
 
 const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || 'http://localhost:5000'
@@ -43,6 +44,12 @@ const Register = () => {
           { name: 'company', label: 'Company' },
           { name: 'title', label: 'Job Title' },
           { name: 'experienceYears', label: 'Years of Experience' },
+        ]
+      case 'recruiter':
+        return [
+          { name: 'organization', label: 'Organization' },
+          { name: 'roleTitle', label: 'Role Title' },
+          { name: 'contactNumber', label: 'Contact Number' },
         ]
       default:
         return []
