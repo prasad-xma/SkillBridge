@@ -9,6 +9,8 @@ export const lightColors = {
   card: '#ffffff',
   tint: '#6c63ff',
   headerText: '#ffffff',
+  heroFrom: '#667eea',
+  heroTo: '#764ba2',
 };
 
 export const darkColors = {
@@ -22,6 +24,8 @@ export const darkColors = {
   card: '#111827',
   tint: '#8b85ff',
   headerText: '#ffffff',
+  heroFrom: '#4f46e5',
+  heroTo: '#7c3aed',
 };
 
 export const themes = {
