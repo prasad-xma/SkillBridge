@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, useColorScheme } from 'react-native'
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, useColorScheme, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native'
 import React, { useMemo, useState } from 'react'
 import { Link } from 'expo-router'
 
@@ -95,87 +95,100 @@ const Register = () => {
   const theme = useMemo(() => (colorScheme === 'dark' ? themes.dark : themes.light), [colorScheme])
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: theme.background }} contentContainerStyle={styles.container}>
-      <View style={styles.hero}>
-        {typeof RegisterSvg === 'function' ? (
-          <RegisterSvg width={220} height={220} />
-        ) : null}
-        <Text style={[styles.title, { color: theme.text }]}>Create your account</Text>
-        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Join SkillBridge to learn and connect</Text>
-      </View>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: theme.background }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={[styles.container, styles.scrollContent]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.hero}>
+            {typeof RegisterSvg === 'function' ? (
+              <RegisterSvg width={220} height={220} />
+            ) : null}
+            <Text style={[styles.title, { color: theme.text }]}>Create your account</Text>
+            <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Join SkillBridge to learn and connect</Text>
+          </View>
 
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
-        <Text style={[styles.label, { color: theme.textSecondary }]}>Full Name</Text>
-        <TextInput
-          style={[styles.input, { color: theme.text, backgroundColor: theme.card, borderColor: theme.border }]}
-          placeholder="John Doe"
-          placeholderTextColor={theme.textSecondary}
-          value={fullName}
-          onChangeText={setFullName}
-        />
-
-        <Text style={[styles.label, { color: theme.textSecondary }]}>Email</Text>
-        <TextInput
-          style={[styles.input, { color: theme.text, backgroundColor: theme.card, borderColor: theme.border }]}
-          placeholder="name@example.com"
-          placeholderTextColor={theme.textSecondary}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-        />
-
-        <Text style={[styles.label, { color: theme.textSecondary }]}>Password</Text>
-        <TextInput
-          style={[styles.input, { color: theme.text, backgroundColor: theme.card, borderColor: theme.border }]}
-          placeholder="••••••••"
-          placeholderTextColor={theme.textSecondary}
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
-
-        <Text style={[styles.label, { color: theme.textSecondary }]}>Role</Text>
-        <View style={styles.roleRow}>
-          {ROLE_OPTIONS.map(opt => (
-            <TouchableOpacity
-              key={opt.key}
-              style={[styles.roleChip, { backgroundColor: theme.card, borderColor: theme.border }, role === opt.key && { backgroundColor: theme.primary + '22', borderColor: theme.primary }]}
-              onPress={() => setRole(opt.key)}
-            >
-              <Text style={[styles.roleChipText, { color: theme.textSecondary }, role === opt.key && { color: theme.primary, fontWeight: '600' }]}>
-                {opt.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {roleFields.map(field => (
-          <View key={field.name}>
-            <Text style={[styles.label, { color: theme.textSecondary }]}>{field.label}</Text>
+          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Text style={[styles.label, { color: theme.textSecondary }]}>Full Name</Text>
             <TextInput
               style={[styles.input, { color: theme.text, backgroundColor: theme.card, borderColor: theme.border }]}
-              placeholder={field.label}
+              placeholder="John Doe"
               placeholderTextColor={theme.textSecondary}
-              value={profile[field.name] || ''}
-              onChangeText={(t) => updateProfile(field.name, t)}
+              value={fullName}
+              onChangeText={setFullName}
             />
-          </View>
-        ))}
 
-        <TouchableOpacity style={[styles.button, { backgroundColor: theme.primary }]} onPress={onSubmit} disabled={loading}>
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Register</Text>
-          )}
-        </TouchableOpacity>
-        <View style={styles.linkRow}>
-          <Text style={[styles.linkLabel, { color: theme.textSecondary }]}>Already have an account?</Text>
-          <Link href="/(auth)/login" style={[styles.linkText, { color: theme.primary }]}>Login</Link>
-        </View>
-      </View>
-    </ScrollView>
+            <Text style={[styles.label, { color: theme.textSecondary }]}>Email</Text>
+            <TextInput
+              style={[styles.input, { color: theme.text, backgroundColor: theme.card, borderColor: theme.border }]}
+              placeholder="name@example.com"
+              placeholderTextColor={theme.textSecondary}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
+            />
+
+            <Text style={[styles.label, { color: theme.textSecondary }]}>Password</Text>
+            <TextInput
+              style={[styles.input, { color: theme.text, backgroundColor: theme.card, borderColor: theme.border }]}
+              placeholder="••••••••"
+              placeholderTextColor={theme.textSecondary}
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
+
+            <Text style={[styles.label, { color: theme.textSecondary }]}>Role</Text>
+            <View style={styles.roleRow}>
+              {ROLE_OPTIONS.map(opt => (
+                <TouchableOpacity
+                  key={opt.key}
+                  style={[styles.roleChip, { backgroundColor: theme.card, borderColor: theme.border }, role === opt.key && { backgroundColor: theme.primary + '22', borderColor: theme.primary }]}
+                  onPress={() => setRole(opt.key)}
+                >
+                  <Text style={[styles.roleChipText, { color: theme.textSecondary }, role === opt.key && { color: theme.primary, fontWeight: '600' }]}>
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {roleFields.map(field => (
+              <View key={field.name}>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>{field.label}</Text>
+                <TextInput
+                  style={[styles.input, { color: theme.text, backgroundColor: theme.card, borderColor: theme.border }]}
+                  placeholder={field.label}
+                  placeholderTextColor={theme.textSecondary}
+                  value={profile[field.name] || ''}
+                  onChangeText={(t) => updateProfile(field.name, t)}
+                />
+              </View>
+            ))}
+
+            <TouchableOpacity style={[styles.button, { backgroundColor: theme.primary }]} onPress={onSubmit} disabled={loading}>
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Register</Text>
+              )}
+            </TouchableOpacity>
+            <View style={styles.linkRow}>
+              <Text style={[styles.linkLabel, { color: theme.textSecondary }]}>Already have an account?</Text>
+              <Link href="/(auth)/login" style={[styles.linkText, { color: theme.primary }]}>Login</Link>
+            </View>
+          </View>
+        </ScrollView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   )
 }
 
@@ -184,6 +197,9 @@ export default Register
 const styles = StyleSheet.create({
   container: {
     padding: 20,
+  },
+  scrollContent: {
+    paddingBottom: 40,
   },
   hero: {
     alignItems: 'center',
