@@ -30,7 +30,7 @@ export default function InstituteHome() {
 
       // Fetch courses from backend (replace with your backend URL)
       try {
-        const response = await fetch("http://192.168.1.4:5000/courses");
+        const response = await fetch("http://172.19.81.244:5000/courses");
         const data = await response.json();
         if (response.ok) setCourses(data);
       } catch (error) {
