@@ -197,7 +197,9 @@ export default function QuestionnaireScreen() {
   }
 
   const onSubmit = async () => {
-    if (!user?.uid) return
+    const userId = user?.uid
+    const userEmail = user?.email
+    if (!userId && !userEmail) return
     const domainFinal = domain === 'Other' ? (domainOther?.trim() || 'Other') : domain
     const interestsFinal = interests.filter(Boolean)
     const answers = {
@@ -214,7 +216,10 @@ export default function QuestionnaireScreen() {
     }
     setSubmitting(true)
     try {
-      await axios.post(`${API_BASE}/api/student/questionnaire`, { uid: user.uid, answers })
+      const payload = { answers }
+      if (userId) payload.uid = userId
+      if (userEmail) payload.email = userEmail
+      await axios.post(`${API_BASE}/api/student/questionnaire`, payload)
       router.push('/(student)/recommendations')
     } catch (e) {
       setSubmitting(false)

@@ -4,25 +4,38 @@ const db = admin.firestore();
 
 async function saveQuestionnaire(req, res) {
   try {
-    const { uid, answers } = req.body || {};
-    if (!uid || !answers || typeof answers !== 'object') {
-      return res.status(400).json({ message: 'Missing uid or answers' });
+    const { uid, email, answers } = req.body || {};
+    if ((!uid && !email) || !answers || typeof answers !== 'object') {
+      return res.status(400).json({ message: 'Missing identifier or answers' });
     }
 
     const now = admin.firestore.FieldValue.serverTimestamp();
+    const docId = uid || email;
 
-    await db.collection('users').doc(uid).set(
+    await db.collection('questionnaireResponses').doc(docId).set(
       {
-        questionnaire: {
-          ...answers,
-          updatedAt: now,
-        },
+        uid: uid || null,
+        email: email || null,
+        answers,
         updatedAt: now,
       },
       { merge: true }
     );
 
-    return res.status(200).json({ ok: true });
+    if (uid) {
+      await db.collection('users').doc(uid).set(
+        {
+          questionnaire: {
+            ...answers,
+            updatedAt: now,
+          },
+          updatedAt: now,
+        },
+        { merge: true }
+      );
+    }
+
+    return res.status(200).json({ ok: true, storedAs: docId });
   } catch (error) {
     return res.status(500).json({ message: 'Failed to save questionnaire', error: error.message });
   }
