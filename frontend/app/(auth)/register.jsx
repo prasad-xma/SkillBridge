@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, useColorScheme, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native'
 import React, { useMemo, useState } from 'react'
-import { Link } from 'expo-router'
+import { Link, router } from 'expo-router'
 
 import axios from 'axios'
 import Constants from 'expo-constants'
@@ -81,6 +81,7 @@ const Register = () => {
         setPassword('')
         setRole('student')
         setProfile({})
+        router.replace('/(auth)/login')
       }
     } catch (e) {
       const msg = e?.response?.data?.message || e.message
