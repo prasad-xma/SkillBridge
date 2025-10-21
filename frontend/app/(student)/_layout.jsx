@@ -38,6 +38,8 @@ export default function StudentTabsLayout() {
       <Tabs.Screen name="network" options={{ title: 'Network' }} />
       <Tabs.Screen name="jobs" options={{ title: 'Jobs' }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+      {/* Hide detail screen from tab bar, but keep it navigable */}
+      <Tabs.Screen name="jobDetail" options={{ href: null }} />
     </Tabs>
   )
 }

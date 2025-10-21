@@ -22,13 +22,13 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-logo/logo_light.png",
+        "foregroundImage": "./assets/logo/logo_light.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true
     },
     "web": {
-      "favicon": "./assets/favlogo/logo_light.png"
+      "favicon": "./assets/logo/logo_light.png"
     },
     "plugins": [
       "expo-router"
