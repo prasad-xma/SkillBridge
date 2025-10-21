@@ -22,9 +22,17 @@ export default function QuestionnaireScreen() {
   const [domain, setDomain] = useState('Computer Science')
   const [careerStage, setCareerStage] = useState('Student')
   const [interests, setInterests] = useState([])
+  const [domainOther, setDomainOther] = useState('')
+  const [interestOther, setInterestOther] = useState('')
+  const [showInterestOther, setShowInterestOther] = useState(false)
   const [goalTimeframe, setGoalTimeframe] = useState('6 months')
-  const [programmingLevel, setProgrammingLevel] = useState(5)
-  const [mathLevel, setMathLevel] = useState(5)
+  // Common skills configuration and state
+  const skillsCommon = useMemo(() => (
+    ['Communication', 'Leadership', 'Problem Solving', 'Teamwork', 'Time Management']
+  ), [])
+  const [skillsLevels, setSkillsLevels] = useState(() => (
+    Object.fromEntries(['Communication', 'Leadership', 'Problem Solving', 'Teamwork', 'Time Management'].map(k => [k, 5]))
+  ))
   const [learningFormat, setLearningFormat] = useState('Video')
   const [weeklyAvailability, setWeeklyAvailability] = useState('Medium (3-6h/wk)')
   const [openAnswer, setOpenAnswer] = useState('')
@@ -38,17 +46,34 @@ export default function QuestionnaireScreen() {
     availability: ['Low (<3h/wk)', 'Medium (3-6h/wk)', 'High (6+ h/wk)'],
   }
 
-  const interestOptions = useMemo(() => [
-    'Web Development',
-    'Mobile Development',
-    'Data Science',
-    'AI/ML',
-    'Cloud Computing',
-    'UI/UX Design',
-    'Cybersecurity',
-    'DevOps',
-    'Product Management',
-  ], [])
+  const interestOptions = useMemo(() => {
+    if (domain === 'Business') {
+      return [
+        'Marketing',
+        'Finance',
+        'Operations',
+        'Entrepreneurship',
+        'Sales',
+        'Human Resources',
+        'Business Analytics',
+        'Product Management',
+        'Other',
+      ]
+    }
+    // Default (tech-oriented)
+    return [
+      'Web Development',
+      'Mobile Development',
+      'Data Science',
+      'AI/ML',
+      'Cloud Computing',
+      'UI/UX Design',
+      'Cybersecurity',
+      'DevOps',
+      'Product Management',
+      'Other',
+    ]
+  }, [domain])
 
   useEffect(() => {
     ;(async () => {
@@ -65,20 +90,36 @@ export default function QuestionnaireScreen() {
     setInterests((prev) => prev.includes(label) ? prev.filter((i) => i !== label) : [...prev, label])
   }
 
+  const addCustomInterest = () => {
+    const v = (interestOther || '').trim()
+    if (!v) return
+    setInterests(prev => prev.includes(v) ? prev : [...prev, v])
+    setInterestOther('')
+  }
+
+  const removeInterest = (label) => {
+    setInterests(prev => prev.filter(i => i !== label))
+  }
+
+  const setSkillLevel = (label, value) => {
+    setSkillsLevels(prev => ({ ...prev, [label]: value }))
+  }
+
   const setStepValue = (setter, value) => {
     setter(value)
   }
 
   const onSubmit = async () => {
     if (!user?.uid) return
+    const domainFinal = domain === 'Other' ? (domainOther?.trim() || 'Other') : domain
+    const interestsFinal = interests.filter(Boolean)
     const answers = {
       educationLevel,
-      domain,
+      domain: domainFinal,
       careerStage,
-      interests,
+      interests: interestsFinal,
       goalTimeframe,
-      programmingLevel,
-      mathLevel,
+      skillsLevels,
       learningFormat,
       weeklyAvailability,
       openAnswer,
@@ -200,21 +241,62 @@ export default function QuestionnaireScreen() {
           </View>
         </LinearGradient>
 
-        <Section title="Academic / Career Info" icon="school">
+      <Section title="Academic / Career Info" icon="school">
         <Dropdown label="Education Level" value={educationLevel} options={dropdowns.education} onChange={setEducationLevel} />
-        <Dropdown label="Field / Domain" value={domain} options={dropdowns.domains} onChange={setDomain} />
+        <Dropdown label="Field / Domain" value={domain} options={dropdowns.domains} onChange={(v) => { setDomain(v); if (v !== 'Other') setDomainOther('') }} />
+        {domain === 'Other' && (
+          <TextInput
+            value={domainOther}
+            onChangeText={setDomainOther}
+            placeholder="Type your field/domain"
+            placeholderTextColor={theme.textSecondary}
+            style={[styles.textArea, { color: theme.text, backgroundColor: theme.surface, borderColor: theme.border, minHeight: 44 }]}
+          />
+        )}
         <RadioGroup label="Career Stage" value={careerStage} options={dropdowns.career} onChange={setCareerStage} />
-        </Section>
+      </Section>
 
-        <Section title="Interests & Goals" icon="flag-outline">
-        <CheckboxGroup label="Interests" selected={interests} options={interestOptions} onToggle={toggleInterest} />
+      <Section title="Interests & Goals" icon="flag-outline">
+        <CheckboxGroup
+          label="Interests"
+          selected={interests}
+          options={interestOptions}
+          onToggle={(label) => {
+            if (label === 'Other') { setShowInterestOther(v => !v); return }
+            toggleInterest(label)
+          }}
+        />
+        {showInterestOther && (
+          <View style={styles.addRow}>
+            <TextInput
+              value={interestOther}
+              onChangeText={setInterestOther}
+              placeholder="Type another interest"
+              placeholderTextColor={theme.textSecondary}
+              style={[styles.addInput, { color: theme.text, backgroundColor: theme.surface, borderColor: theme.border }]}
+            />
+            <TouchableOpacity style={[styles.addBtn, { backgroundColor: theme.primary }]} onPress={addCustomInterest}>
+              <Text style={styles.addBtnText}>Add</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {interests.length > 0 && (
+          <View style={styles.selectedRow}>
+            {interests.map((tag) => (
+              <TouchableOpacity key={tag} onPress={() => removeInterest(tag)} style={[styles.selectedChip, { borderColor: theme.border, backgroundColor: theme.surface }]}> 
+                <Text style={[styles.selectedChipText, { color: theme.textSecondary }]}>{tag}  ×</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
         <RadioGroup label="Goal Timeframe" value={goalTimeframe} options={dropdowns.goals} onChange={setGoalTimeframe} />
-        </Section>
+      </Section>
 
-        <Section title="Current Skills" icon="construct-outline">
-        <StepSlider label="Programming Level" value={programmingLevel} onChange={setProgrammingLevel} />
-        <StepSlider label="Math / Statistics Level" value={mathLevel} onChange={setMathLevel} />
-        </Section>
+      <Section title="Current Skills" icon="construct-outline">
+        {skillsCommon.map((label) => (
+          <StepSlider key={label} label={label} value={skillsLevels[label] ?? 0} onChange={(v) => setSkillLevel(label, v)} />
+        ))}
+      </Section>
 
         <Section title="Learning Preferences" icon="book-outline">
         <RadioGroup label="Preferred Format" value={learningFormat} options={dropdowns.formats} onChange={setLearningFormat} />
@@ -277,4 +359,12 @@ const styles = StyleSheet.create({
   heroIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   heroTitle: { color: '#fff', fontSize: 18, fontWeight: '800' },
   heroSubtitle: { color: '#fff', opacity: 0.9, marginTop: 4, fontSize: 13 },
+  // Added styles for custom interests
+  addRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
+  addInput: { flex: 1, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
+  addBtn: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 },
+  addBtnText: { color: '#fff', fontWeight: '800' },
+  selectedRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  selectedChip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 },
+  selectedChipText: { fontSize: 12, fontWeight: '700' },
 })
