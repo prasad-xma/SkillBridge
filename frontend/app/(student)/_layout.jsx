@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Tabs, router } from 'expo-router'
+import Ionicons from '@expo/vector-icons/Ionicons'
 import { useColorScheme, View } from 'react-native'
 import { themes } from '../../constants/colors'
 import { getSession } from '../../lib/session'
@@ -27,6 +28,7 @@ export default function StudentTabsLayout() {
   return (
     <Tabs
       screenOptions={{
+        headerShown: false,
         tabBarActiveTintColor: theme.primary,
         tabBarInactiveTintColor: theme.textSecondary,
         tabBarStyle: { backgroundColor: theme.card, borderTopColor: theme.border },
@@ -38,8 +40,6 @@ export default function StudentTabsLayout() {
       <Tabs.Screen name="network" options={{ title: 'Network' }} />
       <Tabs.Screen name="jobs" options={{ title: 'Jobs' }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
-      {/* Hide detail screen from tab bar, but keep it navigable */}
-      <Tabs.Screen name="jobDetail" options={{ href: null }} />
     </Tabs>
   )
 }

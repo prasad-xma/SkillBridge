@@ -1,7 +1,7 @@
 const admin = require('../config/firebase');
 
 // Expected body: { email, password, fullName, role, profile }
-// role: 'student' | 'institute' | 'professional'
+// role: 'student' | 'institute' | 'professional' | 'recruiter'
 // profile: role-specific fields
 async function registerUser(req, res) {
   try {
@@ -11,7 +11,7 @@ async function registerUser(req, res) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    const allowedRoles = ['student', 'institute', 'professional'];
+    const allowedRoles = ['student', 'institute', 'professional', 'recruiter'];
     if (!allowedRoles.includes(role)) {
       return res.status(400).json({ message: 'Invalid role' });
     }

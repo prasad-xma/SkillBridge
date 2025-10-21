@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from 'react'
 import { Tabs, router } from 'expo-router'
+import Ionicons from '@expo/vector-icons/Ionicons'
 import { useColorScheme, View } from 'react-native'
 import { getSession } from '../../lib/session'
 import { themes } from '../../constants/colors'
 
-export default function ProfessionalLayout() {
-  const [checked, setChecked] = useState(false)
+export default function RecruiterTabsLayout() {
   const scheme = useColorScheme()
   const theme = scheme === 'dark' ? themes.dark : themes.light
+  const [checked, setChecked] = useState(false)
 
   useEffect(() => {
     (async () => {
-      const s = await getSession()
-      if (!s || s.role !== 'professional') {
+      const session = await getSession()
+      if (!session || session.role !== 'recruiter') {
         router.replace('/login')
         return
       }
@@ -27,19 +28,30 @@ export default function ProfessionalLayout() {
   return (
     <Tabs
       screenOptions={{
+        headerShown: false,
         tabBarActiveTintColor: theme.primary,
         tabBarInactiveTintColor: theme.textSecondary,
         tabBarStyle: { backgroundColor: theme.card, borderTopColor: theme.border },
-        headerStyle: { backgroundColor: theme.card },
-        headerTitleStyle: { color: theme.text },
       }}
     >
-      <Tabs.Screen name="home" options={{ title: 'Home' }} />
-      <Tabs.Screen name="network" options={{ title: 'Network' }} />
-      <Tabs.Screen name="jobs" options={{ title: 'Jobs' }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+      <Tabs.Screen
+        name="home"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
+          ),
+        }}
+      />
     </Tabs>
   )
 }
-
-
