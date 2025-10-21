@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, useColorScheme } from 'react-native'
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, useColorScheme, KeyboardAvoidingView, Platform } from 'react-native'
 import React, { useMemo, useState } from 'react'
 import { Link } from 'expo-router'
 
@@ -57,7 +57,18 @@ const Login = () => {
   const theme = useMemo(() => (colorScheme === 'dark' ? themes.dark : themes.light), [colorScheme])
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: theme.background }} contentContainerStyle={styles.container}>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: theme.background }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
+    >
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+      keyboardDismissMode="on-drag"
+    >
       <View style={styles.hero}>
         {typeof LoginSvg === 'function' ? (
           <LoginSvg width={220} height={220} />
@@ -101,6 +112,7 @@ const Login = () => {
         </View>
       </View>
     </ScrollView>
+    </KeyboardAvoidingView>
   )
 }
 
