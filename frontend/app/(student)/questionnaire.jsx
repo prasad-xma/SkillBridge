@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useColorScheme, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useColorScheme, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Keyboard } from 'react-native'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -237,14 +237,15 @@ export default function QuestionnaireScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={['top', 'left', 'right']}>
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={styles.container}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={['top', 'left', 'right']}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.container}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          onScrollBeginDrag={Keyboard.dismiss}
+        >
         <LinearGradient colors={[theme.heroFrom, theme.heroTo]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.heroCard}>
           <View style={styles.heroIconWrap}>
             <Ionicons name="sparkles" size={22} color="#fff" />
@@ -348,8 +349,7 @@ export default function QuestionnaireScreen() {
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
-  </TouchableWithoutFeedback>
-</KeyboardAvoidingView>
+  </KeyboardAvoidingView>
   )
 }
 
