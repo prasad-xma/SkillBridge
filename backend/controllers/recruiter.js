@@ -151,22 +151,32 @@ async function getDashboard(req, res) {
 
     const jobsSnap = await db.collection('jobs').where('recruiterId', '==', recruiterId).get()
     const jobIds = jobsSnap.docs.map((d) => d.id)
+    // Total jobs across all recruiters for the jobsPosted card
+    const allJobsSnap = await db.collection('jobs').get()
+
+    // If recruiter has no jobs yet, avoid 'in' queries with empty arrays
+    if (jobIds.length === 0) {
+      return res.status(200).json({
+        jobsPosted: allJobsSnap.size,
+        totalApplicants: 0,
+        shortlisted: 0,
+        recentActivity: [],
+      })
+    }
 
     let totalApplicants = 0
     let shortlistedCount = 0
 
-    if (jobIds.length > 0) {
-      const appsSnap = await db.collection('applicants').where('jobId', 'in', jobIds.slice(0, 10)).get()
-      totalApplicants = appsSnap.size
-      shortlistedCount = appsSnap.docs.reduce((acc, doc) => acc + (doc.data().status === 'shortlisted' ? 1 : 0), 0)
-    }
+    const appsSnap = await db.collection('applicants').where('jobId', 'in', jobIds.slice(0, 10)).get()
+    totalApplicants = appsSnap.size
+    shortlistedCount = appsSnap.docs.reduce((acc, doc) => acc + (doc.data().status === 'shortlisted' ? 1 : 0), 0)
 
     const activitySnap = await db
       .collection('recruiter_activity')
       .where('jobId', 'in', jobIds.slice(0, 10))
       .get()
 
-    const recentActivity = activitySnap.docs
+    let recentActivity = activitySnap.docs
       .map((d) => ({ id: d.id, ...d.data() }))
       .sort((a, b) => {
         const ta = a?.createdAt?.toMillis ? a.createdAt.toMillis() : 0
@@ -175,8 +185,62 @@ async function getDashboard(req, res) {
       })
       .slice(0, 10)
 
+    // Build job title map for quick lookup
+    const jobTitleMap = jobsSnap.docs.reduce((acc, doc) => {
+      const data = doc.data() || {}
+      acc[doc.id] = data.title || null
+      return acc
+    }, {})
+
+    // Enrich applicant activities with applicant details (name/email/skills)
+    const applicantIds = Array.from(
+      new Set(
+        recentActivity
+          .filter((a) => a?.type === 'applicant_status' && a?.applicantId)
+          .map((a) => a.applicantId)
+      )
+    )
+
+    if (applicantIds.length > 0) {
+      // Firestore allows up to 10 in an 'in' query; recentActivity is already sliced to 10
+      const appSnap = await db
+        .collection('applicants')
+        .where(admin.firestore.FieldPath.documentId(), 'in', applicantIds.slice(0, 10))
+        .get()
+
+      const appMap = appSnap.docs.reduce((acc, doc) => {
+        const d = doc.data() || {}
+        acc[doc.id] = {
+          name: d.name || null,
+          email: d.email || null,
+          skills: d.skills || null,
+        }
+        return acc
+      }, {})
+
+      recentActivity = recentActivity.map((a) => {
+        if (a?.type === 'applicant_status') {
+          const ad = appMap[a.applicantId] || {}
+          return {
+            ...a,
+            jobTitle: jobTitleMap[a.jobId] || null,
+            applicantName: ad.name || null,
+            applicantEmail: ad.email || null,
+            applicantSkills: ad.skills || null,
+          }
+        }
+        return a
+      })
+    } else {
+      // Still attach jobTitle when available even if there are no applicant lookups
+      recentActivity = recentActivity.map((a) => ({
+        ...a,
+        jobTitle: jobTitleMap[a.jobId] || null,
+      }))
+    }
+
     return res.status(200).json({
-      jobsPosted: jobsSnap.size,
+      jobsPosted: allJobsSnap.size,
       totalApplicants,
       shortlisted: shortlistedCount,
       recentActivity,
