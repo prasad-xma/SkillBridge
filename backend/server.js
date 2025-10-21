@@ -25,6 +25,9 @@ app.use('/api/student', studentRoutes);
 const courseRoutes = require('./routes/courseRoutes');
 app.use('/courses', courseRoutes);
 
+const recruiterRoutes = require('./routes/recruiterRoutes');
+app.use('/api/recruiter', recruiterRoutes);
+
 
 
 

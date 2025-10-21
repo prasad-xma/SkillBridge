@@ -44,12 +44,26 @@ export default function RecruiterTabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="jobs"
         options={{
-          title: 'Profile',
+          title: 'Jobs',
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
+            <Ionicons name={focused ? 'briefcase' : 'briefcase-outline'} size={size} color={color} />
           ),
+        }}
+      />
+      {/** Hidden route for posting a job (navigated via router.push), not shown in tab bar */}
+      <Tabs.Screen
+        name="post-job"
+        options={{
+          href: null,
+        }}
+      />
+      {/** Hidden route for editing a job */}
+      <Tabs.Screen
+        name="edit-job"
+        options={{
+          href: null,
         }}
       />
     </Tabs>
