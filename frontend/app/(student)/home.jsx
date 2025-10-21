@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, useColorScheme, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, useColorScheme, TouchableOpacity, ScrollView } from 'react-native'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { themes } from '../../constants/colors'
 import { getSession } from '../../lib/session'
 import { router } from 'expo-router'
+// import SwipeBackWrapper from '../components/SwipeBackWrapper'
 
 export default function StudentHome() {
   const scheme = useColorScheme()
@@ -25,23 +26,24 @@ export default function StudentHome() {
   const firstName = user?.fullName?.split(' ')?.[0] || 'Student'
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={[styles.hero, { backgroundColor: theme.surface, borderColor: theme.border }]}> 
-        <View style={styles.badgeRow}>
-          <View style={[styles.badge, { backgroundColor: theme.tint + '22', borderColor: theme.tint + '55' }]}>
-            <Text style={[styles.badgeText, { color: theme.tint }]}>Welcome</Text>
+    // <SwipeBackWrapper style={{ flex: 1 }}>
+      <ScrollView style={{ flex: 1, backgroundColor: theme.background }} contentContainerStyle={styles.container}>
+        <View style={[styles.hero, { backgroundColor: theme.surface, borderColor: theme.border }]}> 
+          <View style={styles.badgeRow}>
+            <View style={[styles.badge, { backgroundColor: theme.tint + '22', borderColor: theme.tint + '55' }]}>
+              <Text style={[styles.badgeText, { color: theme.tint }]}>Welcome</Text>
+            </View>
           </View>
-        </View>
 
-        <Text style={[styles.greeting, { color: theme.text }]}>
-          {`Hi, ${firstName} 👋`}
-        </Text>
-        <Text style={[styles.headline, { color: theme.text }]}>
-          Let’s discover your next skill!
-        </Text>
-        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-          Explore courses, practice challenges, and grow your career, one step at a time.
-        </Text>
+          <Text style={[styles.greeting, { color: theme.text }]}>
+            {`Hi, ${firstName} 👋`}
+          </Text>
+          <Text style={[styles.headline, { color: theme.text }]}>
+            Let’s discover your next skill!
+          </Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+            Explore courses, practice challenges, and grow your career, one step at a time.
+          </Text>
 
         <View style={styles.sparklesRow}>
           <View style={[styles.spark, { backgroundColor: theme.primary + '1A' }]} />
@@ -98,7 +100,8 @@ export default function StudentHome() {
           <Text style={styles.ctaButtonText}>Start Quiz</Text>
         </TouchableOpacity>
       </View>
-    </View>
+      </ScrollView>
+    // </SwipeBackWrapper>
   )
 }
 
