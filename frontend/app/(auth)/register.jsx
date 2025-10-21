@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, useColorScheme, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native'
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, useColorScheme, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native'
 import React, { useMemo, useState } from 'react'
 import { Link } from 'expo-router'
 
@@ -7,6 +7,7 @@ import Constants from 'expo-constants'
 import { API_BASE as ENV_API_BASE } from '@env'
 import RegisterSvg from '../../assets/auth/register_img.svg'
 import { themes } from '../../constants/colors'
+import { useToast } from '../components/ToastProvider'
 
 const ROLE_OPTIONS = [
   { key: 'student', label: 'Student' },
@@ -24,6 +25,8 @@ const Register = () => {
   const [role, setRole] = useState('student')
   const [profile, setProfile] = useState({})
   const [loading, setLoading] = useState(false)
+
+  const { showToast } = useToast()
 
   const roleFields = useMemo(() => {
     switch (role) {
@@ -58,7 +61,7 @@ const Register = () => {
 
   const onSubmit = async () => {
     if (!email || !password || !fullName) {
-      Alert.alert('Missing info', 'Please fill all required fields')
+      showToast({ type: 'error', title: 'Incomplete Form', message: 'Please fill all required fields.' })
       return
     }
     setLoading(true)
@@ -71,7 +74,7 @@ const Register = () => {
         profile,
       })
       if (res.status === 201) {
-        Alert.alert('Success', 'Registration complete. You can now log in.')
+        showToast({ type: 'success', title: 'Registered', message: 'Registration complete. You can now log in.' })
         // Clear form fields after successful submission
         setFullName('')
         setEmail('')
@@ -81,7 +84,7 @@ const Register = () => {
       }
     } catch (e) {
       const msg = e?.response?.data?.message || e.message
-      Alert.alert('Registration failed', msg)
+      showToast({ type: 'error', title: 'Registration failed', message: msg })
     } finally {
       setLoading(false)
     }
