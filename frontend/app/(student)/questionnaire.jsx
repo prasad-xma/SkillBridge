@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useColorScheme, TextInput, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useColorScheme, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -11,6 +11,93 @@ import { themes } from '../../constants/colors'
 import { getSession } from '../../lib/session'
 
 const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || 'http://localhost:5000'
+
+// Hoisted child components (accept theme explicitly) to avoid remounts on parent re-render
+const Section = ({ theme, title, icon, children }) => (
+  <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+    <View style={styles.sectionHeader}>
+      <View style={[styles.sectionIcon, { backgroundColor: theme.primary + '1A', borderColor: theme.primary + '33' }]}>
+        <Ionicons name={icon} size={16} color={theme.primary} />
+      </View>
+      <Text style={[styles.sectionTitle, { color: theme.text }]}>{title}</Text>
+    </View>
+    <View style={styles.divider} />
+    {children}
+  </View>
+)
+
+const Dropdown = ({ theme, label, value, options, onChange }) => {
+  const [open, setOpen] = useState(false)
+  return (
+    <View style={{ marginBottom: 14 }}>
+      <Text style={[styles.label, { color: theme.textSecondary }]}>{label}</Text>
+      <TouchableOpacity
+        style={[styles.select, { backgroundColor: theme.surface, borderColor: theme.border }]}
+        onPress={() => setOpen((v) => !v)}
+        activeOpacity={0.8}
+      >
+        <Text style={[styles.selectText, { color: theme.text }]}>{value}</Text>
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} color={theme.textSecondary} size={18} />
+      </TouchableOpacity>
+      {open && (
+        <View style={[styles.menu, { backgroundColor: theme.surface, borderColor: theme.border }]}
+        >
+          {options.map((opt) => (
+            <TouchableOpacity key={opt} style={styles.menuItem} onPress={() => { onChange(opt); setOpen(false) }}>
+              <Text style={[styles.menuText, { color: theme.text }]}>{opt}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+    </View>
+  )
+}
+
+const RadioGroup = ({ theme, label, value, options, onChange }) => (
+  <View style={{ marginBottom: 8 }}>
+    <Text style={[styles.label, { color: theme.textSecondary }]}>{label}</Text>
+    <View style={styles.rowWrap}>
+      {options.map((opt) => (
+        <TouchableOpacity key={opt} style={[styles.radio, { borderColor: theme.border }]} onPress={() => onChange(opt)}>
+          <Ionicons name={value === opt ? 'radio-button-on' : 'radio-button-off'} size={18} color={value === opt ? theme.primary : theme.textSecondary} />
+          <Text style={[styles.radioText, { color: theme.text }]}>{opt}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  </View>
+)
+
+const CheckboxGroup = ({ theme, label, selected, options, onToggle }) => (
+  <View style={{ marginBottom: 8 }}>
+    <Text style={[styles.label, { color: theme.textSecondary }]}>{label}</Text>
+    <View style={styles.rowWrap}>
+      {options.map((opt) => {
+        const active = selected.includes(opt)
+        return (
+          <TouchableOpacity key={opt} style={[styles.checkbox, { borderColor: active ? theme.primary : theme.border, backgroundColor: active ? theme.primary + '14' : theme.surface }]} onPress={() => onToggle(opt)}>
+            <Ionicons name={active ? 'checkbox' : 'square-outline'} size={18} color={active ? theme.primary : theme.textSecondary} />
+            <Text style={[styles.checkboxText, { color: theme.text }]}>{opt}</Text>
+          </TouchableOpacity>
+        )
+      })}
+    </View>
+  </View>
+)
+
+const StepSlider = ({ theme, label, value, onChange, steps = 11 }) => (
+  <View style={{ marginBottom: 8 }}>
+    <Text style={[styles.label, { color: theme.textSecondary }]}>{label}: <Text style={{ fontWeight: '700', color: theme.text }}>{value}</Text></Text>
+    <View style={[styles.track, { backgroundColor: theme.border }]}> 
+      {Array.from({ length: steps }).map((_, i) => (
+        <TouchableOpacity key={i} style={[styles.tick, { backgroundColor: i <= value ? theme.primary : theme.surface, borderColor: theme.border }]} onPress={() => onChange(i)} />
+      ))}
+    </View>
+    <View style={styles.trackLabels}>
+      <Text style={[styles.small, { color: theme.textSecondary }]}>0</Text>
+      <Text style={[styles.small, { color: theme.textSecondary }]}>10</Text>
+    </View>
+  </View>
+)
 
 export default function QuestionnaireScreen() {
   const scheme = useColorScheme()
@@ -134,91 +221,7 @@ export default function QuestionnaireScreen() {
     }
   }
 
-  const Section = ({ title, icon, children }) => (
-    <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
-      <View style={styles.sectionHeader}>
-        <View style={[styles.sectionIcon, { backgroundColor: theme.primary + '1A', borderColor: theme.primary + '33' }]}>
-          <Ionicons name={icon} size={16} color={theme.primary} />
-        </View>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>{title}</Text>
-      </View>
-      <View style={styles.divider} />
-      {children}
-    </View>
-  )
-
-  const Dropdown = ({ label, value, options, onChange }) => {
-    const [open, setOpen] = useState(false)
-    return (
-      <View style={{ marginBottom: 14 }}>
-        <Text style={[styles.label, { color: theme.textSecondary }]}>{label}</Text>
-        <TouchableOpacity
-          style={[styles.select, { backgroundColor: theme.surface, borderColor: theme.border }]}
-          onPress={() => setOpen((v) => !v)}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.selectText, { color: theme.text }]}>{value}</Text>
-          <Ionicons name={open ? 'chevron-up' : 'chevron-down'} color={theme.textSecondary} size={18} />
-        </TouchableOpacity>
-        {open && (
-          <View style={[styles.menu, { backgroundColor: theme.surface, borderColor: theme.border }]}
-          >
-            {options.map((opt) => (
-              <TouchableOpacity key={opt} style={styles.menuItem} onPress={() => { onChange(opt); setOpen(false) }}>
-                <Text style={[styles.menuText, { color: theme.text }]}>{opt}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-      </View>
-    )
-  }
-
-  const RadioGroup = ({ label, value, options, onChange }) => (
-    <View style={{ marginBottom: 8 }}>
-      <Text style={[styles.label, { color: theme.textSecondary }]}>{label}</Text>
-      <View style={styles.rowWrap}>
-        {options.map((opt) => (
-          <TouchableOpacity key={opt} style={[styles.radio, { borderColor: theme.border }]} onPress={() => onChange(opt)}>
-            <Ionicons name={value === opt ? 'radio-button-on' : 'radio-button-off'} size={18} color={value === opt ? theme.primary : theme.textSecondary} />
-            <Text style={[styles.radioText, { color: theme.text }]}>{opt}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </View>
-  )
-
-  const CheckboxGroup = ({ label, selected, options, onToggle }) => (
-    <View style={{ marginBottom: 8 }}>
-      <Text style={[styles.label, { color: theme.textSecondary }]}>{label}</Text>
-      <View style={styles.rowWrap}>
-        {options.map((opt) => {
-          const active = selected.includes(opt)
-          return (
-            <TouchableOpacity key={opt} style={[styles.checkbox, { borderColor: active ? theme.primary : theme.border, backgroundColor: active ? theme.primary + '14' : theme.surface }]} onPress={() => onToggle(opt)}>
-              <Ionicons name={active ? 'checkbox' : 'square-outline'} size={18} color={active ? theme.primary : theme.textSecondary} />
-              <Text style={[styles.checkboxText, { color: theme.text }]}>{opt}</Text>
-            </TouchableOpacity>
-          )
-        })}
-      </View>
-    </View>
-  )
-
-  const StepSlider = ({ label, value, onChange, steps = 11 }) => (
-    <View style={{ marginBottom: 8 }}>
-      <Text style={[styles.label, { color: theme.textSecondary }]}>{label}: <Text style={{ fontWeight: '700', color: theme.text }}>{value}</Text></Text>
-      <View style={[styles.track, { backgroundColor: theme.border }]}>
-        {Array.from({ length: steps }).map((_, i) => (
-          <TouchableOpacity key={i} style={[styles.tick, { backgroundColor: i <= value ? theme.primary : theme.surface, borderColor: theme.border }]} onPress={() => setStepValue(onChange, i)} />
-        ))}
-      </View>
-      <View style={styles.trackLabels}>
-        <Text style={[styles.small, { color: theme.textSecondary }]}>0</Text>
-        <Text style={[styles.small, { color: theme.textSecondary }]}>10</Text>
-      </View>
-    </View>
-  )
+  
 
   if (!user) {
     return (
@@ -229,8 +232,19 @@ export default function QuestionnaireScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={['top', 'left', 'right']}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: theme.background }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={['top', 'left', 'right']}>
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={styles.container}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
         <LinearGradient colors={[theme.heroFrom, theme.heroTo]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.heroCard}>
           <View style={styles.heroIconWrap}>
             <Ionicons name="sparkles" size={22} color="#fff" />
@@ -241,9 +255,9 @@ export default function QuestionnaireScreen() {
           </View>
         </LinearGradient>
 
-      <Section title="Academic / Career Info" icon="school">
-        <Dropdown label="Education Level" value={educationLevel} options={dropdowns.education} onChange={setEducationLevel} />
-        <Dropdown label="Field / Domain" value={domain} options={dropdowns.domains} onChange={(v) => { setDomain(v); if (v !== 'Other') setDomainOther('') }} />
+      <Section theme={theme} title="Academic / Career Info" icon="school">
+        <Dropdown theme={theme} label="Education Level" value={educationLevel} options={dropdowns.education} onChange={setEducationLevel} />
+        <Dropdown theme={theme} label="Field / Domain" value={domain} options={dropdowns.domains} onChange={(v) => { setDomain(v); if (v !== 'Other') setDomainOther('') }} />
         {domain === 'Other' && (
           <TextInput
             value={domainOther}
@@ -251,13 +265,17 @@ export default function QuestionnaireScreen() {
             placeholder="Type your field/domain"
             placeholderTextColor={theme.textSecondary}
             style={[styles.textArea, { color: theme.text, backgroundColor: theme.surface, borderColor: theme.border, minHeight: 44 }]}
+            autoCapitalize="words"
+            autoCorrect={false}
+            blurOnSubmit={false}
           />
         )}
-        <RadioGroup label="Career Stage" value={careerStage} options={dropdowns.career} onChange={setCareerStage} />
+        <RadioGroup theme={theme} label="Career Stage" value={careerStage} options={dropdowns.career} onChange={setCareerStage} />
       </Section>
 
-      <Section title="Interests & Goals" icon="flag-outline">
+      <Section theme={theme} title="Interests & Goals" icon="flag-outline">
         <CheckboxGroup
+          theme={theme}
           label="Interests"
           selected={interests}
           options={interestOptions}
@@ -274,6 +292,9 @@ export default function QuestionnaireScreen() {
               placeholder="Type another interest"
               placeholderTextColor={theme.textSecondary}
               style={[styles.addInput, { color: theme.text, backgroundColor: theme.surface, borderColor: theme.border }]}
+              autoCapitalize="words"
+              autoCorrect={false}
+              blurOnSubmit={false}
             />
             <TouchableOpacity style={[styles.addBtn, { backgroundColor: theme.primary }]} onPress={addCustomInterest}>
               <Text style={styles.addBtnText}>Add</Text>
@@ -289,21 +310,21 @@ export default function QuestionnaireScreen() {
             ))}
           </View>
         )}
-        <RadioGroup label="Goal Timeframe" value={goalTimeframe} options={dropdowns.goals} onChange={setGoalTimeframe} />
+        <RadioGroup theme={theme} label="Goal Timeframe" value={goalTimeframe} options={dropdowns.goals} onChange={setGoalTimeframe} />
       </Section>
 
-      <Section title="Current Skills" icon="construct-outline">
+      <Section theme={theme} title="Current Skills" icon="construct-outline">
         {skillsCommon.map((label) => (
-          <StepSlider key={label} label={label} value={skillsLevels[label] ?? 0} onChange={(v) => setSkillLevel(label, v)} />
+          <StepSlider theme={theme} key={label} label={label} value={skillsLevels[label] ?? 0} onChange={(v) => setSkillLevel(label, v)} />
         ))}
       </Section>
 
-        <Section title="Learning Preferences" icon="book-outline">
-        <RadioGroup label="Preferred Format" value={learningFormat} options={dropdowns.formats} onChange={setLearningFormat} />
-        <RadioGroup label="Weekly Availability" value={weeklyAvailability} options={dropdowns.availability} onChange={setWeeklyAvailability} />
+        <Section theme={theme} title="Learning Preferences" icon="book-outline">
+        <RadioGroup theme={theme} label="Preferred Format" value={learningFormat} options={dropdowns.formats} onChange={setLearningFormat} />
+        <RadioGroup theme={theme} label="Weekly Availability" value={weeklyAvailability} options={dropdowns.availability} onChange={setWeeklyAvailability} />
         </Section>
 
-        <Section title="Open-ended" icon="chatbubbles-outline">
+        <Section theme={theme} title="Open-ended" icon="chatbubbles-outline">
         <Text style={[styles.label, { color: theme.textSecondary }]}>What do you want to achieve?</Text>
         <TextInput
           value={openAnswer}
@@ -313,6 +334,8 @@ export default function QuestionnaireScreen() {
           style={[styles.textArea, { color: theme.text, backgroundColor: theme.surface, borderColor: theme.border }]}
           placeholder="Describe your goals"
           placeholderTextColor={theme.textSecondary}
+          blurOnSubmit={false}
+          textAlignVertical="top"
         />
         </Section>
 
@@ -325,6 +348,8 @@ export default function QuestionnaireScreen() {
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
+  </TouchableWithoutFeedback>
+</KeyboardAvoidingView>
   )
 }
 
