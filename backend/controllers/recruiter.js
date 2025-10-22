@@ -142,6 +142,10 @@ async function hireApplicant(req, res) {
   return updateApplicantStatus(req, res, 'hired')
 }
 
+async function undoApplicant(req, res) {
+  return updateApplicantStatus(req, res, 'pending')
+}
+
 // --------------- Dashboard ---------------
 // GET /recruiter/:id/dashboard
 async function getDashboard(req, res) {
@@ -262,6 +266,7 @@ module.exports = {
   shortlistApplicant,
   rejectApplicant,
   hireApplicant,
+  undoApplicant,
   // dashboard
   getDashboard,
 }

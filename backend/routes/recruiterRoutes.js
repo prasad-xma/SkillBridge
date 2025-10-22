@@ -15,6 +15,7 @@ router.get('/jobs/:id/applicants', recruiter.listApplicants)
 router.put('/jobs/:id/applicants/:applicantId/shortlist', recruiter.shortlistApplicant)
 router.put('/jobs/:id/applicants/:applicantId/reject', recruiter.rejectApplicant)
 router.put('/jobs/:id/applicants/:applicantId/hire', recruiter.hireApplicant)
+router.put('/jobs/:id/applicants/:applicantId/undo', recruiter.undoApplicant)
 
 // --------------- Dashboard -------------
 router.get('/recruiter/:id/dashboard', recruiter.getDashboard)

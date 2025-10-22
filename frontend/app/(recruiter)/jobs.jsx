@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { View, Text, StyleSheet, useColorScheme, FlatList, TouchableOpacity, ScrollView, Alert } from 'react-native'
+import { View, Text, StyleSheet, useColorScheme, FlatList, TouchableOpacity, ScrollView, Alert, Modal } from 'react-native'
 import { themes } from '../../constants/colors'
 import { getSession } from '../../lib/session'
 import { router } from 'expo-router'
@@ -16,14 +16,17 @@ export default function RecruiterJobs() {
   const [selectedJob, setSelectedJob] = useState(null)
   const [tab, setTab] = useState('All')
   const [applicantsRaw, setApplicantsRaw] = useState([])
+  const [viewing, setViewing] = useState(null)
+  const [dismissedRejected, setDismissedRejected] = useState({})
 
   const applicants = useMemo(() => {
     const base = applicantsRaw
     if (tab === 'All') return base.filter(a => !['shortlisted', 'rejected', 'hired'].includes(a.status))
     if (tab === 'Shortlisted') return base.filter(a => a.status === 'shortlisted')
     if (tab === 'Hired') return base.filter(a => a.status === 'hired')
+    if (tab === 'Rejected') return base.filter(a => a.status === 'rejected' && !dismissedRejected[a.id])
     return base
-  }, [tab, applicantsRaw])
+  }, [tab, applicantsRaw, dismissedRejected])
 
   useEffect(() => {
     (async () => {
@@ -109,9 +112,16 @@ export default function RecruiterJobs() {
       console.log('[Recruiter] PUT', url)
       await axios.put(url)
       // optimistic local update so item disappears from 'All'
-      const newStatus = action === 'shortlist' ? 'shortlisted' : action === 'reject' ? 'rejected' : action === 'hire' ? 'hired' : undefined
+      const newStatus = action === 'shortlist' ? 'shortlisted' : action === 'reject' ? 'rejected' : action === 'hire' ? 'hired' : action === 'undo' ? 'pending' : undefined
       if (newStatus) {
         setApplicantsRaw((prev) => prev.map((a) => (a.id === applicantId ? { ...a, status: newStatus } : a)))
+      }
+      if (action === 'hire') {
+        setTab('Hired')
+      }
+      // If user re-confirms Reject while in Rejected tab, hide it from this tab
+      if (action === 'reject' && tab === 'Rejected') {
+        setDismissedRejected((prev) => ({ ...prev, [applicantId]: true }))
       }
       // optional background refresh to stay in sync (non-blocking)
       try {
@@ -180,7 +190,7 @@ export default function RecruiterJobs() {
 
           {/* Tabs */}
           <View style={[styles.tabs, { borderColor: theme.border }]}> 
-            {['All', 'Shortlisted', 'Hired'].map(t => (
+            {['All', 'Shortlisted', 'Hired', 'Rejected'].map(t => (
               <TouchableOpacity key={t} onPress={() => setTab(t)} style={[styles.tabItem, tab === t && styles.tabItemActive]}> 
                 <Text style={{ color: tab === t ? '#111827' : theme.textSecondary, fontWeight: tab === t ? '700' : '600' }}>{t}</Text>
               </TouchableOpacity>
@@ -199,16 +209,52 @@ export default function RecruiterJobs() {
                   <Text style={{ color: theme.textSecondary, marginTop: 4 }}>Skills: {Array.isArray(item.skills) ? item.skills.join(', ') : item.skills}</Text>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
-                  <View style={styles.matchPill}><Text style={styles.matchText}>{item.matchPercentage ?? item.match ?? '-'}%</Text></View>
+                  <View style={styles.matchPill}><Text style={styles.matchText}>{item.matchPercentage ?? item.match ?? '-' }%</Text></View>
                   <View style={styles.actionsRow}>
-                    <TouchableOpacity style={[styles.actionBtn, styles.shortlist]} onPress={() => updateApplicant(selectedJob.id, item.id, 'shortlist')}><Text style={styles.actionText}>Shortlist</Text></TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionBtn, styles.reject]} onPress={() => updateApplicant(selectedJob.id, item.id, 'reject')}><Text style={styles.actionText}>Reject</Text></TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionBtn, styles.hire]} onPress={() => updateApplicant(selectedJob.id, item.id, 'hire')}><Text style={styles.actionText}>Hire</Text></TouchableOpacity>
+                    {/* Always allow viewing */}
+                    <TouchableOpacity style={[styles.actionBtn, styles.viewBtn]} onPress={() => setViewing(item)}><Text style={styles.viewText}>View</Text></TouchableOpacity>
+                    {/* Actions depend on tab/status */}
+                    {tab === 'All' && (
+                      <>
+                        <TouchableOpacity style={[styles.actionBtn, styles.shortlist]} onPress={() => updateApplicant(selectedJob.id, item.id, 'shortlist')}><Text style={styles.actionText}>Shortlist</Text></TouchableOpacity>
+                        <TouchableOpacity style={[styles.actionBtn, styles.reject]} onPress={() => updateApplicant(selectedJob.id, item.id, 'reject')}><Text style={styles.actionText}>Reject</Text></TouchableOpacity>
+                      </>
+                    )}
+                    {tab === 'Shortlisted' && (
+                      <>
+                        <TouchableOpacity style={[styles.actionBtn, styles.hire]} onPress={() => updateApplicant(selectedJob.id, item.id, 'hire')}><Text style={styles.actionText}>Hire</Text></TouchableOpacity>
+                        <TouchableOpacity style={[styles.actionBtn, styles.reject]} onPress={() => updateApplicant(selectedJob.id, item.id, 'reject')}><Text style={styles.actionText}>Reject</Text></TouchableOpacity>
+                      </>
+                    )}
+                    {tab === 'Hired' && (
+                      <></>
+                    )}
+                    {tab === 'Rejected' && (
+                      <>
+                        <TouchableOpacity style={[styles.actionBtn, styles.undo]} onPress={() => updateApplicant(selectedJob.id, item.id, 'undo')}><Text style={styles.actionText}>Undo</Text></TouchableOpacity>
+                        <TouchableOpacity style={[styles.actionBtn, styles.reject]} onPress={() => updateApplicant(selectedJob.id, item.id, 'reject')}><Text style={styles.actionText}>Reject</Text></TouchableOpacity>
+                      </>
+                    )}
                   </View>
                 </View>
               </View>
             )}
           />
+          <Modal visible={!!viewing} transparent animationType="fade" onRequestClose={() => setViewing(null)}>
+            <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
+              <View style={{ width: '88%', borderRadius: 12, padding: 16, backgroundColor: theme.card, borderWidth: 1, borderColor: theme.border }}>
+                <Text style={{ fontSize: 16, fontWeight: '800', color: theme.text }}>{viewing?.name || 'Applicant'}</Text>
+                <Text style={{ marginTop: 8, color: theme.textSecondary }}>Email: {viewing?.email || '-'}</Text>
+                <Text style={{ marginTop: 4, color: theme.textSecondary }}>Skills: {Array.isArray(viewing?.skills) ? viewing?.skills?.join(', ') : viewing?.skills || '-'}</Text>
+                <Text style={{ marginTop: 4, color: theme.textSecondary }}>Match: {viewing?.matchPercentage ?? viewing?.match ?? '-'}%</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16 }}>
+                  <TouchableOpacity onPress={() => setViewing(null)} style={{ paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, backgroundColor: '#111827' }}>
+                    <Text style={{ color: '#ffffff', fontWeight: '700' }}>Close</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
         </View>
       )}
     </View>
@@ -316,17 +362,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     marginTop: 8,
+    flexWrap: 'wrap',
   },
   actionBtn: {
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 8,
   },
+  viewBtn: {
+    backgroundColor: '#3b82f6',
+  },
   shortlist: {
     backgroundColor: '#22c55e',
   },
   reject: {
     backgroundColor: '#ef4444',
+  },
+  undo: {
+    backgroundColor: '#f59e0b',
+  },
+  hire: {
+    backgroundColor: '#6366f1',
+  },
+  viewText: {
+    color: '#ffffff',
+    fontWeight: '700',
+    fontSize: 12,
   },
   actionText: {
     color: '#ffffff',
