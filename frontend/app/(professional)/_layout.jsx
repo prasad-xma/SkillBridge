@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from 'react'
-import { Stack, router, Tabs } from 'expo-router'
+import { Tabs, router } from 'expo-router'
+import { useColorScheme, View } from 'react-native'
 import { getSession } from '../../lib/session'
+import { themes } from '../../constants/colors'
 
 export default function ProfessionalLayout() {
   const [checked, setChecked] = useState(false)
+  const scheme = useColorScheme()
+  const theme = scheme === 'dark' ? themes.dark : themes.light
 
   useEffect(() => {
     (async () => {
@@ -16,7 +20,9 @@ export default function ProfessionalLayout() {
     })()
   }, [])
 
-  if (!checked) return null
+  if (!checked) {
+    return <View style={{ flex: 1, backgroundColor: theme.background }} />
+  }
 
   return (
     <Tabs
