@@ -112,17 +112,13 @@ export default function StudentHome() {
 
       <View style={styles.quickRow}>
         <TouchableOpacity
-          style={[styles.quickChip, { backgroundColor: theme.surface, borderColor: theme.border, opacity: preparing ? 0.7 : 1 }]}
-          onPress={handleExplore}
-          disabled={preparing}
+          style={[styles.quickChip, { backgroundColor: theme.surface, borderColor: theme.border }]}
+          onPress={() => router.push('/(student)/courses')}
         >
           <View style={[styles.quickIconWrap, { backgroundColor: theme.primary + '1A' }]}> 
-            <Ionicons name="sparkles" size={18} color={theme.primary} />
+            <Ionicons name="book-outline" size={18} color={theme.primary} />
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={[styles.quickLabel, { color: theme.text }]}>{preparing ? 'Preparing…' : 'Recommendations'}</Text>
-            {preparing && <ActivityIndicator size="small" color={theme.primary} />}
-          </View>
+          <Text style={[styles.quickLabel, { color: theme.text }]}>Courses</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.quickChip, { backgroundColor: theme.surface, borderColor: theme.border }]} onPress={() => router.push('/(student)/network')}>
           <View style={[styles.quickIconWrap, { backgroundColor: theme.accent + '1A' }]}>
