@@ -61,6 +61,7 @@ export default function RecommendationsScreen() {
       setError(null)
       const payload = { ...identity.payload }
       if (force) payload.force = true
+      payload.includeTags = true
       const response = await axios.post(`${API_BASE}/api/recommend-skills`, payload)
       setData(response.data)
       setNeedsQuestionnaire(false)
@@ -87,7 +88,7 @@ export default function RecommendationsScreen() {
       setLoading(true)
       setError(null)
       setNeedsQuestionnaire(false)
-      const response = await axios.get(`${API_BASE}/api/recommendations?${identity.query}`)
+      const response = await axios.get(`${API_BASE}/api/recommendations?${identity.query}&includeTags=1`)
       const rec = response.data
       setData(rec)
       if (rec?.isStale) {
@@ -125,12 +126,24 @@ export default function RecommendationsScreen() {
   const generatedAt = data?.generatedAt
   const questionnaireUpdatedAt = data?.questionnaireUpdatedAt
   const stale = Boolean(data?.isStale)
+  const skillTags = Array.isArray(data?.skillTags)
+    ? data.skillTags
+    : skills.map(s => s?.name).filter(Boolean).slice(0, 10)
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: theme.background }} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-      <LinearGradient colors={[theme.heroFrom, theme.heroTo]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.heroCard}>
-        <View style={styles.heroIconWrap}>
-          <Ionicons name="sparkles" size={22} color="#fff" />
+    <ScrollView
+      style={{ flex: 1, backgroundColor: theme.background }}
+      contentContainerStyle={[styles.contentContainer, { paddingBottom: 48, paddingTop: 40 }]}
+    >
+      <LinearGradient
+        colors={[theme.heroFrom, theme.heroTo]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.heroCard, { borderColor: theme.heroAccent + '33' }]}
+      >
+        <View style={[styles.heroAccentBubble, { backgroundColor: theme.heroAccent + '22' }]} />
+        <View style={[styles.heroIconWrap, { backgroundColor: theme.badgeGlow + '33', shadowColor: '#00000033' }]}> 
+          <Ionicons name="sparkles" size={22} color={theme.heroAccent} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.heroTitle}>Your Personalized Path</Text>
@@ -139,7 +152,7 @@ export default function RecommendationsScreen() {
         <TouchableOpacity
           disabled={generating}
           onPress={() => regenerate(user, true)}
-          style={[styles.refreshBtn, { backgroundColor: theme.primary + 'EE' }]}
+          style={[styles.refreshBtn, { backgroundColor: theme.primary + 'EE', shadowColor: theme.heroAccent + '44' }]}
         >
           {generating ? (
             <ActivityIndicator color="#fff" />
@@ -151,6 +164,28 @@ export default function RecommendationsScreen() {
           )}
         </TouchableOpacity>
       </LinearGradient>
+
+      {(skillTags?.length || 0) > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagsRow}>
+          {skillTags.map((tag, idx) => (
+            <View
+              key={`tag-${idx}`}
+              style={[
+                styles.chip,
+                {
+                  backgroundColor: idx % 2 === 0 ? theme.skillCardBg : theme.skillCardBgAlt,
+                  borderColor: theme.skillCardBorder,
+                },
+              ]}
+            >
+              <Ionicons name="pricetag-outline" size={14} color={theme.heroAccent} />
+              <Text style={[styles.chipText, { color: theme.text }]} numberOfLines={1}>
+                {String(tag)}
+              </Text>
+            </View>
+          ))}
+        </ScrollView>
+      )}
 
       {needsQuestionnaire ? (
         <View style={[styles.emptyCard, { backgroundColor: theme.card, borderColor: theme.border }]}> 
@@ -172,14 +207,14 @@ export default function RecommendationsScreen() {
             </View>
           ) : (
             <>
-              <View style={[styles.metaCard, { backgroundColor: theme.surface, borderColor: theme.border }]}> 
+              <View style={[styles.metaCard, { backgroundColor: theme.secondarySurface, borderColor: theme.border }]}> 
                 <Ionicons name="time-outline" size={16} color={theme.textSecondary} />
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.metaLabel, { color: theme.textSecondary }]}>Last generated</Text>
                   <Text style={[styles.metaValue, { color: theme.text }]}>{generatedAt ? new Date(generatedAt).toLocaleString() : 'Just now'}</Text>
                 </View>
                 {stale && (
-                  <View style={[styles.badge, { backgroundColor: theme.accent + '22', borderColor: theme.accent + '55' }]}> 
+                  <View style={[styles.badge, { backgroundColor: theme.heroAccent + '22', borderColor: theme.heroAccent + '55' }]}> 
                     <Text style={[styles.badgeText, { color: theme.accent }]}>Needs refresh</Text>
                   </View>
                 )}
@@ -194,10 +229,20 @@ export default function RecommendationsScreen() {
               ) : (
                 <View style={styles.grid}>
                   {skills.map((s, idx) => (
-                    <View key={`${s?.name || 'skill'}-${idx}`} style={[styles.skillCard, { backgroundColor: theme.card, borderColor: theme.border }]}> 
+                    <View
+                      key={`${s?.name || 'skill'}-${idx}`}
+                      style={[
+                        styles.skillCard,
+                        {
+                          backgroundColor: idx % 2 === 0 ? theme.skillCardBg : theme.skillCardBgAlt,
+                          borderColor: theme.skillCardBorder,
+                          shadowColor: theme.primary + '22',
+                        },
+                      ]}
+                    >
                       <View style={styles.skillHeader}>
-                        <View style={[styles.badge, { backgroundColor: theme.primary + '1A', borderColor: theme.primary + '33' }]}>
-                          <Ionicons name="flash" color={theme.primary} size={14} />
+                        <View style={[styles.skillBadge, { backgroundColor: theme.heroAccent + '22', borderColor: theme.heroAccent + '55' }]}> 
+                          <Ionicons name="flash" color={theme.heroAccent} size={14} />
                         </View>
                         <Text style={[styles.skillTitle, { color: theme.text }]}>{s?.name || 'Skill'}</Text>
                       </View>
@@ -208,13 +253,20 @@ export default function RecommendationsScreen() {
               )}
 
               <Text style={[styles.title, { color: theme.text, marginTop: 12 }]}>Advice</Text>
-              <View style={[styles.adviceCard, { backgroundColor: theme.card, borderColor: theme.border }]}> 
-                <Ionicons name="chatbubbles" size={16} color={theme.textSecondary} />
+              <LinearGradient
+                colors={[theme.adviceGradientFrom, theme.adviceGradientTo]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.adviceCard, { borderColor: theme.adviceBorder }]}
+              >
+                <View style={[styles.adviceIconWrap, { backgroundColor: theme.badgeGlow + '22' }]}> 
+                  <Ionicons name="chatbubbles" size={16} color={theme.heroAccent} />
+                </View>
                 <Text style={[styles.adviceText, { color: theme.text }]}>{advice || 'Personalized advice will appear here.'}</Text>
-              </View>
+              </LinearGradient>
 
               {questionnaireUpdatedAt && (
-                <View style={[styles.metaCard, { backgroundColor: theme.surface, borderColor: theme.border, marginTop: 14 }]}> 
+                <View style={[styles.metaCard, { backgroundColor: theme.secondarySurface, borderColor: theme.border, marginTop: 14 }]}> 
                   <Ionicons name="create-outline" size={16} color={theme.textSecondary} />
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.metaLabel, { color: theme.textSecondary }]}>Questionnaire last updated</Text>
@@ -231,27 +283,109 @@ export default function RecommendationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, paddingTop: 42 },
+  contentContainer: { paddingHorizontal: 16 },
   title: { fontSize: 18, fontWeight: '800', marginBottom: 10 },
   subtitle: { fontSize: 14 },
   loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  heroCard: { borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
-  heroIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
-  heroTitle: { color: '#fff', fontSize: 18, fontWeight: '800' },
-  heroSubtitle: { color: '#fff', opacity: 0.9, marginTop: 4, fontSize: 13 },
-  refreshBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 },
+  heroCard: {
+    borderRadius: 20,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginBottom: 20,
+    shadowColor: '#00000022',
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 10,
+    borderWidth: 1,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  heroAccentBubble: {
+    position: 'absolute',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    right: -40,
+    top: -40,
+  },
+  heroIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
+  heroTitle: { color: '#fff', fontSize: 20, fontWeight: '800' },
+  heroSubtitle: { color: '#fff', opacity: 0.9, marginTop: 6, fontSize: 13 },
+  refreshBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
   refreshText: { color: '#fff', fontWeight: '800', fontSize: 12 },
-  adviceCard: { borderWidth: 1, borderRadius: 14, padding: 14, gap: 8 },
-  adviceText: { fontSize: 14, lineHeight: 20 },
+  tagsRow: { paddingVertical: 6, gap: 8 },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    maxWidth: 180,
+  },
+  chipText: { fontSize: 12, fontWeight: '700' },
+  adviceCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+    shadowColor: '#0f172a22',
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
+  },
+  adviceText: { fontSize: 14, lineHeight: 20, flex: 1, flexWrap: 'wrap' },
   emptyCard: { borderWidth: 1, borderRadius: 12, padding: 12, flexDirection: 'row', gap: 8, alignItems: 'center' },
-  emptyText: { fontSize: 13 },
-  grid: { gap: 12 },
-  skillCard: { borderWidth: 1, borderRadius: 14, padding: 14 },
+  emptyText: { fontSize: 13, flex: 1, flexWrap: 'wrap' },
+  adviceIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  grid: { gap: 14 },
+  skillCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+    overflow: 'hidden',
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 5,
+  },
   skillHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  skillBadge: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 6 },
   badge: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 6 },
   badgeText: { fontSize: 11, fontWeight: '700' },
-  skillTitle: { fontSize: 16, fontWeight: '800' },
-  skillWhy: { fontSize: 13, lineHeight: 18 },
+  skillTitle: { fontSize: 16, fontWeight: '800', flexShrink: 1, minWidth: 0 },
+  skillWhy: { fontSize: 13, lineHeight: 18, flexShrink: 1, flexWrap: 'wrap' },
   metaCard: { borderWidth: 1, borderRadius: 12, padding: 12, flexDirection: 'row', gap: 10, alignItems: 'center', marginBottom: 12 },
   metaLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.6 },
   metaValue: { fontSize: 13, fontWeight: '700' },
