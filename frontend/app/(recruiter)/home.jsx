@@ -105,7 +105,9 @@ export default function RecruiterHome() {
           <View key={item.id}>
             {idx > 0 && <View style={[styles.separator, { backgroundColor: theme.border }]} />}
             <Text style={{ color: theme.textSecondary }}>
-              {item.type === 'applicant_status' ? `Applicant ${item.applicantId} ${item.status} for job ${item.jobId}` : item.type || 'Activity'}
+              {item.type === 'applicant_status'
+                ? `${item.applicantName || 'Applicant'} ${item.status} for ${item.jobTitle || 'a job'}`
+                : item.type || 'Activity'}
             </Text>
           </View>
         ))}

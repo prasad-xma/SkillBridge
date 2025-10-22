@@ -19,7 +19,7 @@ export default function RecruiterJobs() {
 
   const applicants = useMemo(() => {
     const base = applicantsRaw
-    if (tab === 'All') return base
+    if (tab === 'All') return base.filter(a => !['shortlisted', 'rejected', 'hired'].includes(a.status))
     if (tab === 'Shortlisted') return base.filter(a => a.status === 'shortlisted')
     if (tab === 'Hired') return base.filter(a => a.status === 'hired')
     return base
@@ -108,9 +108,18 @@ export default function RecruiterJobs() {
       const url = `${API_BASE}/api/recruiter/jobs/${jobId}/applicants/${applicantId}/${action}`
       console.log('[Recruiter] PUT', url)
       await axios.put(url)
-      // refresh list
-      const resp = await axios.get(`${API_BASE}/api/recruiter/jobs/${jobId}/applicants`)
-      setApplicantsRaw(Array.isArray(resp.data) ? resp.data : [])
+      // optimistic local update so item disappears from 'All'
+      const newStatus = action === 'shortlist' ? 'shortlisted' : action === 'reject' ? 'rejected' : action === 'hire' ? 'hired' : undefined
+      if (newStatus) {
+        setApplicantsRaw((prev) => prev.map((a) => (a.id === applicantId ? { ...a, status: newStatus } : a)))
+      }
+      // optional background refresh to stay in sync (non-blocking)
+      try {
+        const resp = await axios.get(`${API_BASE}/api/recruiter/jobs/${jobId}/applicants`)
+        setApplicantsRaw(Array.isArray(resp.data) ? resp.data : [])
+      } catch (_) {
+        // ignore background refresh errors
+      }
     } catch (e) {
       console.warn('[Recruiter] updateApplicant error', e?.response?.data || e?.message)
       Alert.alert('Failed to update applicant', e?.response?.data?.message || e?.message || `Failed to ${action}`)
