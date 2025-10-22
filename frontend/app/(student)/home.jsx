@@ -1,16 +1,20 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, useColorScheme, TouchableOpacity, ScrollView } from 'react-native'
+import { View, Text, StyleSheet, useColorScheme, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { themes } from '../../constants/colors'
 import { getSession } from '../../lib/session'
 import { router } from 'expo-router'
+import axios from 'axios'
+import Constants from 'expo-constants'
+import { API_BASE as ENV_API_BASE } from '@env'
 // import SwipeBackWrapper from '../components/SwipeBackWrapper'
 
 export default function StudentHome() {
   const scheme = useColorScheme()
   const theme = scheme === 'dark' ? themes.dark : themes.light
   const [user, setUser] = useState(null)
+  const [preparing, setPreparing] = useState(false)
 
   useEffect(() => {
     (async () => {
@@ -24,6 +28,60 @@ export default function StudentHome() {
   }, [])
 
   const firstName = user?.fullName?.split(' ')?.[0] || 'Student'
+  const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || 'http://localhost:5000'
+
+  const getIdentity = () => {
+    if (user?.uid) {
+      return {
+        query: `userId=${encodeURIComponent(user.uid)}`,
+        payload: { userId: user.uid },
+      }
+    }
+    if (user?.email) {
+      return {
+        query: `email=${encodeURIComponent(user.email)}`,
+        payload: { email: user.email },
+      }
+    }
+    return null
+  }
+
+  const prepareRecommendations = async () => {
+    const identity = getIdentity()
+    if (!identity) {
+      return { redirect: '/(student)/questionnaire' }
+    }
+    try {
+      const response = await axios.get(`${API_BASE}/api/recommendations?${identity.query}`)
+      if (response?.data?.isStale) {
+        await axios.post(`${API_BASE}/api/recommend-skills`, { ...identity.payload, force: true })
+      }
+      return { redirect: '/(student)/recommendations' }
+    } catch (err) {
+      const status = err?.response?.status
+      const message = (err?.response?.data?.message || '').toLowerCase()
+      if (status === 404 && message.includes('questionnaire')) {
+        return { redirect: '/(student)/questionnaire' }
+      }
+      if (status === 404) {
+        await axios.post(`${API_BASE}/api/recommend-skills`, { ...identity.payload })
+        return { redirect: '/(student)/recommendations' }
+      }
+      return { error: err?.response?.data?.message || err?.message || 'Failed to prepare recommendations' }
+    }
+  }
+
+  const handleExplore = async () => {
+    if (!user || preparing) return
+    setPreparing(true)
+    const result = await prepareRecommendations()
+    setPreparing(false)
+    if (result?.redirect) {
+      router.push(result.redirect)
+    } else {
+      router.push('/(student)/recommendations')
+    }
+  }
 
   return (
     // <SwipeBackWrapper style={{ flex: 1 }}>
@@ -53,11 +111,14 @@ export default function StudentHome() {
       </View>
 
       <View style={styles.quickRow}>
-        <TouchableOpacity style={[styles.quickChip, { backgroundColor: theme.surface, borderColor: theme.border }]} onPress={() => router.push('/(student)/recommendations')}>
-          <View style={[styles.quickIconWrap, { backgroundColor: theme.primary + '1A' }]}>
-            <Ionicons name="sparkles" size={18} color={theme.primary} />
+        <TouchableOpacity
+          style={[styles.quickChip, { backgroundColor: theme.surface, borderColor: theme.border }]}
+          onPress={() => router.push('/(student)/courses')}
+        >
+          <View style={[styles.quickIconWrap, { backgroundColor: theme.primary + '1A' }]}> 
+            <Ionicons name="book-outline" size={18} color={theme.primary} />
           </View>
-          <Text style={[styles.quickLabel, { color: theme.text }]}>Recommendations</Text>
+          <Text style={[styles.quickLabel, { color: theme.text }]}>Courses</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.quickChip, { backgroundColor: theme.surface, borderColor: theme.border }]} onPress={() => router.push('/(student)/network')}>
           <View style={[styles.quickIconWrap, { backgroundColor: theme.accent + '1A' }]}>
@@ -80,9 +141,13 @@ export default function StudentHome() {
           <Text style={styles.showcaseTitle}>Level up faster</Text>
           <Text style={styles.showcaseSubtitle}>Explore curated learning paths crafted for you</Text>
         </View>
-        <TouchableOpacity style={[styles.showcaseBtn, { backgroundColor: '#ffffff22', borderColor: '#ffffff44' }]} onPress={() => router.push('/(student)/recommendations')}>
+        <TouchableOpacity
+          style={[styles.showcaseBtn, { backgroundColor: '#ffffff22', borderColor: '#ffffff44', opacity: preparing ? 0.7 : 1 }]}
+          onPress={handleExplore}
+          disabled={preparing}
+        >
           <Ionicons name="arrow-forward" size={16} color="#fff" />
-          <Text style={styles.showcaseBtnText}>Explore</Text>
+          {preparing ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.showcaseBtnText}>Explore</Text>}
         </TouchableOpacity>
       </LinearGradient>
 

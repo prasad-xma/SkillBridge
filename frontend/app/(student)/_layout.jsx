@@ -62,6 +62,13 @@ export default function StudentTabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="courses"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
