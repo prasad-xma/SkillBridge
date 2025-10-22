@@ -184,12 +184,11 @@ export default function RecommendationsScreen() {
         style={[styles.heroCard, { borderColor: theme.heroAccent + '33' }]}
       >
         <View style={[styles.heroAccentBubble, { backgroundColor: theme.heroAccent + '22' }]} />
-        <View style={[styles.heroIconWrap, { backgroundColor: theme.badgeGlow + '33', shadowColor: '#00000033' }]}> 
-          <Ionicons name="sparkles" size={22} color={theme.heroAccent} />
-        </View>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={styles.heroTitle} numberOfLines={1} ellipsizeMode="tail">Your Personalized Path</Text>
-          <Text style={styles.heroSubtitle} numberOfLines={2} ellipsizeMode="tail">Curated insights for {user.fullName || 'you'}</Text>
+        <View style={styles.heroRow}>
+          <View style={[styles.heroIconWrap, { backgroundColor: theme.badgeGlow + '33', shadowColor: '#00000033' }]}> 
+            <Ionicons name="sparkles" size={22} color={theme.heroAccent} />
+          </View>
+          <Text style={styles.heroTitle}>Your Personalized Path</Text>
         </View>
         <TouchableOpacity
           disabled={generating}
@@ -334,7 +333,8 @@ const styles = StyleSheet.create({
     padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    flexWrap: 'wrap',
+    gap: 14,
     marginBottom: 20,
     shadowColor: '#00000022',
     shadowOpacity: 0.25,
@@ -364,12 +364,17 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 6,
   },
-  heroTitle: { color: '#fff', fontSize: 20, fontWeight: '800' },
+  heroRow: { flexDirection: 'row', alignItems: 'center', gap: 12, flexShrink: 1, minWidth: 0 },
+  heroTitle: { color: '#fff', fontSize: 22, fontWeight: '800', flexShrink: 1, minWidth: 0 },
   heroSubtitle: { color: '#fff', opacity: 0.9, marginTop: 6, fontSize: 13 },
   refreshBtn: {
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 12,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    flexDirection: 'row',
+    gap: 6,
     shadowOpacity: 0.3,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 6 },
