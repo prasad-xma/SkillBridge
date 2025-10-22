@@ -9,6 +9,14 @@ export const lightColors = {
   card: '#ffffff',
   tint: '#6c63ff',
   headerText: '#ffffff',
+  heroFrom: '#667eea',
+  heroTo: '#764ba2',
+  toastBase: '#111827',
+  toastText: '#f9fafb',
+  toastSuccess: '#22c55e',
+  toastError: '#ef4444',
+  toastInfo: '#3b82f6',
+  toastShadow: 'rgba(15, 23, 42, 0.18)',
 };
 
 export const darkColors = {
@@ -22,6 +30,14 @@ export const darkColors = {
   card: '#111827',
   tint: '#8b85ff',
   headerText: '#ffffff',
+  heroFrom: '#4f46e5',
+  heroTo: '#7c3aed',
+  toastBase: '#111827',
+  toastText: '#f9fafb',
+  toastSuccess: '#34d399',
+  toastError: '#f87171',
+  toastInfo: '#60a5fa',
+  toastShadow: 'rgba(0, 0, 0, 0.35)',
 };
 
 export const themes = {
