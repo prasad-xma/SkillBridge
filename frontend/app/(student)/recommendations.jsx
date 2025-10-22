@@ -49,6 +49,42 @@ export default function RecommendationsScreen() {
     return null
   }
 
+  const deriveSkillTagsFromInterests = (answers) => {
+    const tags = new Set()
+    const interests = Array.isArray(answers?.interests) ? answers.interests : []
+    const add = (arr) => arr.forEach(t => tags.add(t))
+    interests.forEach((it) => {
+      const k = String(it).toLowerCase()
+      if (k.includes('web')) add(['HTML', 'CSS', 'JavaScript', 'React', 'Node.js'])
+      else if (k.includes('mobile')) add(['React Native', 'Flutter', 'Swift', 'Kotlin'])
+      else if (k.includes('data')) add(['Python', 'Pandas', 'NumPy', 'scikit-learn'])
+      else if (k.includes('ai') || k.includes('ml')) add(['Python', 'TensorFlow', 'PyTorch', 'Machine Learning'])
+      else if (k.includes('cloud')) add(['AWS', 'Docker', 'Kubernetes'])
+      else if (k.includes('ui') || k.includes('ux') || k.includes('design')) add(['Figma', 'Wireframing', 'Prototyping'])
+      else if (k.includes('security')) add(['Network Security', 'OWASP', 'Penetration Testing'])
+      else if (k.includes('devops')) add(['Docker', 'Kubernetes', 'Terraform', 'CI/CD'])
+      else if (k.includes('product')) add(['User Stories', 'Roadmapping', 'Analytics'])
+      else if (k.includes('marketing')) add(['SEO', 'Content Marketing', 'Google Analytics'])
+      else if (k.includes('finance')) add(['Excel', 'Accounting', 'Financial Modeling'])
+    })
+    return Array.from(tags).slice(0, 16)
+  }
+
+  const tryLoadSkillTagsFromQuestionnaire = async (session) => {
+    const identity = getIdentity(session)
+    if (!identity) return
+    try {
+      const res = await axios.get(`${API_BASE}/api/student/questionnaire?${identity.query}`)
+      const answers = res?.data?.answers || res?.data
+      const derived = deriveSkillTagsFromInterests(answers)
+      if (derived?.length) {
+        setData((prev) => ({ ...(prev || {}), skillTags: derived }))
+      }
+    } catch (_) {
+      // ignore
+    }
+  }
+
   const regenerate = async (session, force = false) => {
     const identity = getIdentity(session)
     if (!identity) {
@@ -65,6 +101,9 @@ export default function RecommendationsScreen() {
       const response = await axios.post(`${API_BASE}/api/recommend-skills`, payload)
       setData(response.data)
       setNeedsQuestionnaire(false)
+      if (!Array.isArray(response?.data?.skillTags) || response.data.skillTags.length === 0) {
+        await tryLoadSkillTagsFromQuestionnaire(session)
+      }
     } catch (err) {
       const message = err?.response?.data?.message || err?.message || 'Failed to generate recommendations'
       if (err?.response?.status === 404 && message.toLowerCase().includes('questionnaire')) {
@@ -95,6 +134,9 @@ export default function RecommendationsScreen() {
         await regenerate(session, true)
       } else {
         setLoading(false)
+      }
+      if (!Array.isArray(rec?.skillTags) || rec.skillTags.length === 0) {
+        await tryLoadSkillTagsFromQuestionnaire(session)
       }
     } catch (err) {
       const status = err?.response?.status
@@ -145,9 +187,9 @@ export default function RecommendationsScreen() {
         <View style={[styles.heroIconWrap, { backgroundColor: theme.badgeGlow + '33', shadowColor: '#00000033' }]}> 
           <Ionicons name="sparkles" size={22} color={theme.heroAccent} />
         </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.heroTitle}>Your Personalized Path</Text>
-          <Text style={styles.heroSubtitle}>Curated insights for {user.fullName || 'you'}</Text>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={styles.heroTitle} numberOfLines={1} ellipsizeMode="tail">Your Personalized Path</Text>
+          <Text style={styles.heroSubtitle} numberOfLines={2} ellipsizeMode="tail">Curated insights for {user.fullName || 'you'}</Text>
         </View>
         <TouchableOpacity
           disabled={generating}
@@ -179,7 +221,7 @@ export default function RecommendationsScreen() {
               ]}
             >
               <Ionicons name="pricetag-outline" size={14} color={theme.heroAccent} />
-              <Text style={[styles.chipText, { color: theme.text }]} numberOfLines={1}>
+              <Text style={[styles.chipText, { color: theme.text }]} numberOfLines={1} ellipsizeMode="tail">
                 {String(tag)}
               </Text>
             </View>
@@ -244,7 +286,7 @@ export default function RecommendationsScreen() {
                         <View style={[styles.skillBadge, { backgroundColor: theme.heroAccent + '22', borderColor: theme.heroAccent + '55' }]}> 
                           <Ionicons name="flash" color={theme.heroAccent} size={14} />
                         </View>
-                        <Text style={[styles.skillTitle, { color: theme.text }]}>{s?.name || 'Skill'}</Text>
+                        <Text style={[styles.skillTitle, { color: theme.text }]} numberOfLines={1} ellipsizeMode="tail">{s?.name || 'Skill'}</Text>
                       </View>
                       <Text style={[styles.skillWhy, { color: theme.textSecondary }]}>{s?.why || ''}</Text>
                     </View>
@@ -334,7 +376,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   refreshText: { color: '#fff', fontWeight: '800', fontSize: 12 },
-  tagsRow: { paddingVertical: 6, gap: 8 },
+  tagsRow: { paddingVertical: 6, paddingRight: 8, gap: 8, marginBottom: 12 },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',

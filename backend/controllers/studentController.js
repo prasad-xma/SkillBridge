@@ -8,7 +8,6 @@ async function saveQuestionnaire(req, res) {
     if ((!uid && !email) || !answers || typeof answers !== 'object') {
       return res.status(400).json({ message: 'Missing identifier or answers' });
     }
-
     const now = admin.firestore.FieldValue.serverTimestamp();
     const docId = uid || email;
 
@@ -38,6 +37,27 @@ async function saveQuestionnaire(req, res) {
     return res.status(200).json({ ok: true, storedAs: docId });
   } catch (error) {
     return res.status(500).json({ message: 'Failed to save questionnaire', error: error.message });
+  }
+}
+
+async function getQuestionnaire(req, res) {
+  try {
+    const { uid, userId, email } = req.query || {}
+    const docId = uid || userId || email
+    if (!docId) {
+      return res.status(400).json({ message: 'Missing uid, userId or email' })
+    }
+
+    const snap = await db.collection('questionnaireResponses').doc(docId).get()
+    if (!snap.exists) {
+      return res.status(404).json({ message: 'Questionnaire not found' })
+    }
+    const data = snap.data() || {}
+    const answers = data.answers || {}
+    const updatedAt = data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : null
+    return res.status(200).json({ answers, updatedAt })
+  } catch (error) {
+    return res.status(500).json({ message: 'Failed to load questionnaire', error: error.message })
   }
 }
 
@@ -137,4 +157,4 @@ async function applyForJob(req, res) {
   }
 }
 
-module.exports = { saveQuestionnaire, listJobs, listApplications, applyForJob };
+module.exports = { saveQuestionnaire, getQuestionnaire, listJobs, listApplications, applyForJob };
