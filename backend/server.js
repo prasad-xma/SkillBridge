@@ -28,6 +28,9 @@ app.use('/courses', courseRoutes);
 const recruiterRoutes = require('./routes/recruiterRoutes');
 app.use('/api/recruiter', recruiterRoutes);
 
+const recommendRoutes = require('./routes/recommendRoutes');
+app.use('/api', recommendRoutes);
+
 
 
 
