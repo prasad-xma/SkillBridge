@@ -1,54 +1,62 @@
-import React, { useState } from "react";
-import { Ionicons } from "@expo/vector-icons";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   TextInput,
-  StyleSheet,
   TouchableOpacity,
   FlatList,
-  useColorScheme,
+  StyleSheet,
   ScrollView,
-  KeyboardAvoidingView,
-  Platform,
+  useColorScheme,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { themes } from "../../constants/colors";
 import { getSession } from "../../lib/session";
-import { useRouter } from "expo-router";
 
-export default function AddCourse() {
+export default function EditSkill({ route, navigation }) {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const parsedFromRouter = params?.skill
+    ? (() => {
+        try {
+          return JSON.parse(params.skill);
+        } catch (_) {
+          return null;
+        }
+      })()
+    : null;
+  const skill = route?.params?.skill || parsedFromRouter; // support both navigation methods
   const scheme = useColorScheme();
   const theme = scheme === "dark" ? themes.dark : themes.light;
 
-  const [courseName, setCourseName] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("");
-  const [difficulty, setDifficulty] = useState("");
-  const [duration, setDuration] = useState("");
-  const [fees, setFees] = useState("");
-  const [chapterInput, setChapterInput] = useState("");
-  const [chapters, setChapters] = useState([]);
-  const [learningOutcomes, setLearningOutcomes] = useState([]);
+  const [skillName, setSkillName] = useState(skill?.skillName || "");
+  const [description, setDescription] = useState(skill?.description || "");
+  const [category, setCategory] = useState(skill?.category || "");
+  const [difficulty, setDifficulty] = useState(skill?.difficulty || "");
+  const [duration, setDuration] = useState(skill?.duration || "");
+  const [prerequisites, setPrerequisites] = useState(skill?.prerequisites || []);
+  const [learningOutcomes, setLearningOutcomes] = useState(skill?.learningOutcomes || []);
+  const [prerequisiteInput, setPrerequisiteInput] = useState("");
   const [outcomeInput, setOutcomeInput] = useState("");
   const [loading, setLoading] = useState(false);
 
   const difficultyOptions = ["Beginner", "Intermediate", "Advanced"];
-  const categoryOptions = ["Programming", "Design", "Marketing", "Business", "Language", "Technical", "Web Development", "Data Science", "Other"];
+  const categoryOptions = ["Programming", "Design", "Marketing", "Business", "Language", "Technical", "Other"];
 
-  // Add a chapter
-  const addChapter = () => {
-    if (chapterInput.trim() !== "") {
-      setChapters([...chapters, chapterInput.trim()]);
-      setChapterInput("");
+  // Add a prerequisite
+  const addPrerequisite = () => {
+    if (prerequisiteInput.trim() !== "") {
+      setPrerequisites([...prerequisites, prerequisiteInput.trim()]);
+      setPrerequisiteInput("");
     }
   };
 
-  // Remove a chapter
-  const removeChapter = (index) => {
-    const newChapters = [...chapters];
-    newChapters.splice(index, 1);
-    setChapters(newChapters);
+  // Remove a prerequisite
+  const removePrerequisite = (index) => {
+    const newPrerequisites = [...prerequisites];
+    newPrerequisites.splice(index, 1);
+    setPrerequisites(newPrerequisites);
   };
 
   // Add a learning outcome
@@ -68,7 +76,13 @@ export default function AddCourse() {
 
   // Handle save
   const handleSave = async () => {
-    if (!courseName || !description || !category || !difficulty || !duration || !fees) {
+    const skillId = skill?.id || skill?._id; // Use id field from backend
+    if (!skill || !skillId) {
+      alert("Missing skill context. Please go back and open Edit again.");
+      return;
+    }
+
+    if (!skillName || !description || !category || !difficulty || !duration) {
       alert("Please fill in all required fields.");
       return;
     }
@@ -77,45 +91,51 @@ export default function AddCourse() {
     try {
       const session = await getSession();
       const token = session?.idToken;
-
-      const response = await fetch("http://192.168.1.4:5000/courses/add", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token ? `Bearer ${token}` : "",
-        },
-        body: JSON.stringify({
-          courseName,
-          description,
-          category,
-          difficulty,
-          duration,
-          fees: Number(fees),
-          chapters: Array.isArray(chapters) ? chapters : [],
-          learningOutcomes: Array.isArray(learningOutcomes) ? learningOutcomes : [],
-        }),
-      });
+ 
+      const response = await fetch(
+        `http://192.168.1.4:5000/skills/update/${skillId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+          body: JSON.stringify({
+            skillName,
+            description,
+            category,
+            difficulty,
+            duration,
+            prerequisites: Array.isArray(prerequisites) ? prerequisites : [],
+            learningOutcomes: Array.isArray(learningOutcomes) ? learningOutcomes : [],
+          }),
+        }
+      );
 
       let data = {};
       try { data = await response.json(); } catch (_) {}
 
       if (!response.ok) {
-        throw new Error(data?.message || `Failed to add course (status ${response.status})`);
+        throw new Error(data?.message || `Failed to update skill (status ${response.status})`);
       }
 
-      alert("Course added successfully!");
-      router.back();
+      alert("Skill updated successfully!");
+      if (router?.replace) {
+        router.replace("/(institute)/skills");
+      } else if (navigation?.navigate) {
+        navigation.navigate("skills");
+      }
     } catch (error) {
-      alert(error?.message || "Failed to add course");
+      alert(error?.message || "Failed to update skill");
     } finally {
       setLoading(false);
     }
   };
 
-  const renderChapter = ({ item, index }) => (
+  const renderPrerequisite = ({ item, index }) => (
     <View style={styles.listItem}>
       <Text style={{ color: theme.text, flex: 1 }}>{item}</Text>
-      <TouchableOpacity onPress={() => removeChapter(index)}>
+      <TouchableOpacity onPress={() => removePrerequisite(index)}>
         <Ionicons name="trash-outline" size={20} color="#ff4d4f" />
       </TouchableOpacity>
     </View>
@@ -131,21 +151,15 @@ export default function AddCourse() {
   );
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-      <ScrollView
-        style={[styles.container, { backgroundColor: theme.background }]}
-        contentContainerStyle={{ paddingBottom: 30 }}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-      >
-      <Text style={[styles.title, { color: theme.text }]}>Add New Course</Text>
+    <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
+      <Text style={[styles.title, { color: theme.text }]}>Edit Skill</Text>
 
       <TextInput
         style={[styles.input, { color: theme.text, borderColor: theme.border }]}
-        placeholder="Course Name"
+        placeholder="Skill Name"
         placeholderTextColor={theme.placeholder}
-        value={courseName}
-        onChangeText={setCourseName}
+        value={skillName}
+        onChangeText={setSkillName}
       />
 
       <TextInput
@@ -209,44 +223,35 @@ export default function AddCourse() {
 
       <TextInput
         style={[styles.input, { color: theme.text, borderColor: theme.border }]}
-        placeholder="Duration (e.g. 6 weeks, 3 months)"
+        placeholder="Duration (e.g. 4 weeks, 2 months)"
         placeholderTextColor={theme.placeholder}
         value={duration}
         onChangeText={setDuration}
       />
 
-      <TextInput
-        style={[styles.input, { color: theme.text, borderColor: theme.border }]}
-        placeholder="Course Fees"
-        placeholderTextColor={theme.placeholder}
-        value={fees}
-        onChangeText={setFees}
-        keyboardType="numeric"
-      />
-
-      {/* Chapters Input */}
+      {/* Prerequisites Input */}
       <View style={styles.sectionContainer}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>Course Chapters</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>Prerequisites</Text>
         <View style={{ flexDirection: "row", marginBottom: 10 }}>
           <TextInput
             style={[
               styles.input,
               { flex: 1, color: theme.text, borderColor: theme.border, marginRight: 8 },
             ]}
-            placeholder="Add Chapter"
+            placeholder="Add Prerequisite"
             placeholderTextColor={theme.placeholder}
-            value={chapterInput}
-            onChangeText={setChapterInput}
+            value={prerequisiteInput}
+            onChangeText={setPrerequisiteInput}
           />
-          <TouchableOpacity style={styles.addBtn} onPress={addChapter}>
+          <TouchableOpacity style={styles.addBtn} onPress={addPrerequisite}>
             <Ionicons name="add-outline" size={24} color="#007bff" />
           </TouchableOpacity>
         </View>
 
         <FlatList
-          data={chapters}
+          data={prerequisites}
           keyExtractor={(item, index) => index.toString()}
-          renderItem={renderChapter}
+          renderItem={renderPrerequisite}
           scrollEnabled={false}
         />
       </View>
@@ -283,10 +288,9 @@ export default function AddCourse() {
         onPress={handleSave}
         disabled={loading}
       >
-        <Text style={styles.submitText}>{loading ? "Adding..." : "Add Course"}</Text>
+        <Text style={styles.submitText}>{loading ? "Saving..." : "Save Changes"}</Text>
       </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
+    </ScrollView>
   );
 }
 
