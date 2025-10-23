@@ -1,13 +1,26 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, useColorScheme } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, useColorScheme, ScrollView, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native'
+import axios from 'axios'
+import Constants from 'expo-constants'
+import { API_BASE as ENV_API_BASE } from '@env'
 import { themes } from '../../constants/colors'
-import { getSession, clearSession } from '../../lib/session'
+import { getSession, clearSession, saveSession } from '../../lib/session'
 import { router } from 'expo-router'
+import { useToast } from '../components/ToastProvider'
+
+const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || 'http://localhost:5000'
 
 export default function StudentProfile() {
   const scheme = useColorScheme()
   const theme = scheme === 'dark' ? themes.dark : themes.light
   const [user, setUser] = useState(null)
+  const { showToast } = useToast()
+  const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [fullNameField, setFullNameField] = useState('')
+  const [institution, setInstitution] = useState('')
+  const [course, setCourse] = useState('')
+  const [year, setYear] = useState('')
 
   useEffect(() => {
     (async () => {
@@ -19,6 +32,72 @@ export default function StudentProfile() {
   const onLogout = async () => {
     await clearSession()
     router.replace('/login')
+  }
+
+  const startEdit = () => {
+    if (!user) return
+    setFullNameField(user?.fullName || '')
+    const p = user?.profile || {}
+    setInstitution(String(p?.institution || ''))
+    setCourse(String(p?.course || ''))
+    setYear(String(p?.year || ''))
+    setEditing(true)
+  }
+
+  const cancelEdit = () => {
+    setEditing(false)
+  }
+
+  const onSave = async () => {
+    if (!user?.uid) {
+      showToast({ type: 'error', title: 'Update failed', message: 'Missing user id' })
+      return
+    }
+
+    const trimmedName = (fullNameField || '').trim()
+    const currentProfile = user?.profile || {}
+    const nextProfile = {
+      ...currentProfile,
+      institution,
+      course,
+      year,
+    }
+
+    const profileChanged =
+      (nextProfile.institution || '') !== (currentProfile.institution || '') ||
+      (nextProfile.course || '') !== (currentProfile.course || '') ||
+      (nextProfile.year || '') !== (currentProfile.year || '')
+
+    const body = { uid: user.uid }
+    if (trimmedName && trimmedName !== (user.fullName || '')) body.fullName = trimmedName
+    if (profileChanged) body.profile = nextProfile
+
+    if (!body.fullName && !body.profile) {
+      showToast({ type: 'info', title: 'No changes', message: 'Nothing to update.' })
+      setEditing(false)
+      return
+    }
+
+    setSaving(true)
+    try {
+      const res = await axios.put(`${API_BASE}/api/student/profile`, body)
+      let updatedUser = { ...user }
+      if (res.status === 200 && res.data?.user) {
+        const u = res.data.user
+        updatedUser = { ...updatedUser, fullName: u.fullName ?? updatedUser.fullName, profile: u.profile ?? nextProfile }
+      } else {
+        updatedUser = { ...updatedUser, fullName: trimmedName || updatedUser.fullName, profile: nextProfile }
+      }
+      setUser(updatedUser)
+      await saveSession(updatedUser)
+      showToast({ type: 'success', title: 'Profile updated' })
+      setEditing(false)
+    } catch (e) {
+      const msg = e?.response?.data?.message || e.message
+      showToast({ type: 'error', title: 'Update failed', message: msg })
+    } finally {
+      setSaving(false)
+    }
   }
 
   const initials = useMemo(() => {
@@ -44,7 +123,19 @@ export default function StudentProfile() {
   const profile = user?.profile || {}
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}> 
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: theme.background }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
+    >
+    <ScrollView
+      style={{ flex: 1, backgroundColor: theme.background }}
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+      keyboardDismissMode="on-drag"
+      nestedScrollEnabled
+    > 
       <View style={[styles.headerCard, { backgroundColor: theme.surface, borderColor: theme.border }]}> 
         <View style={[styles.avatar, { backgroundColor: theme.tint + '22', borderColor: theme.tint + '44' }]}> 
           <Text style={[styles.avatarText, { color: theme.tint }]}>{initials}</Text> 
@@ -98,15 +189,76 @@ export default function StudentProfile() {
         ) : null} 
       </View> 
 
-      <TouchableOpacity style={[styles.button, { backgroundColor: theme.primary }]} onPress={onLogout}> 
+      {!editing ? (
+        <TouchableOpacity style={[styles.button, { backgroundColor: theme.secondary }]} onPress={startEdit}> 
+          <Text style={{ color: '#fff', fontWeight: '700' }}>Edit Profile</Text> 
+        </TouchableOpacity> 
+      ) : (
+        <View style={[styles.detailsCard, { backgroundColor: theme.card, borderColor: theme.border, marginTop: 16 }]}> 
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Edit Profile</Text> 
+          <View style={styles.divider} />
+
+          <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Full Name</Text>
+          <TextInput
+            style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surface }]}
+            placeholder="Full Name"
+            placeholderTextColor={theme.textSecondary}
+            value={fullNameField}
+            onChangeText={setFullNameField}
+          />
+
+          <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Institution</Text>
+          <TextInput
+            style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surface }]}
+            placeholder="Institution"
+            placeholderTextColor={theme.textSecondary}
+            value={institution}
+            onChangeText={setInstitution}
+          />
+
+          <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Course</Text>
+          <TextInput
+            style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surface }]}
+            placeholder="Course"
+            placeholderTextColor={theme.textSecondary}
+            value={course}
+            onChangeText={setCourse}
+          />
+
+          <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Year</Text>
+          <TextInput
+            style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surface }]}
+            placeholder="Year"
+            placeholderTextColor={theme.textSecondary}
+            value={year}
+            onChangeText={setYear}
+          />
+
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+            <TouchableOpacity style={[styles.button, { backgroundColor: theme.primary, flex: 1, opacity: saving ? 0.7 : 1 }]} onPress={onSave} disabled={saving}>
+              {saving ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={{ color: '#fff', fontWeight: '700' }}>Save</Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.button, { backgroundColor: theme.border, flex: 1 }]} onPress={cancelEdit} disabled={saving}>
+              <Text style={{ color: theme.text, fontWeight: '700' }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      <TouchableOpacity style={[styles.button, { backgroundColor: theme.primary, marginTop: 12 }]} onPress={onLogout}> 
         <Text style={{ color: '#fff', fontWeight: '700' }}>Logout</Text> 
       </TouchableOpacity> 
-    </View> 
+    </ScrollView>
+    </KeyboardAvoidingView> 
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, paddingTop: 42 },
+  container: { padding: 16, paddingTop: 42, paddingBottom: 40 },
   headerCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -157,6 +309,7 @@ const styles = StyleSheet.create({
   fieldValue: { fontSize: 13, fontWeight: '700' },
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, maxWidth: '60%', justifyContent: 'flex-end' },
   chip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 1 },
+  input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, marginTop: 6, marginBottom: 10 },
 
   button: { marginTop: 24, paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
 })
