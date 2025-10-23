@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, useColorScheme } from 'react-native'
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, useColorScheme, KeyboardAvoidingView, Platform } from 'react-native'
 import React, { useMemo, useState } from 'react'
 import { Link } from 'expo-router'
 
@@ -9,6 +9,7 @@ import LoginSvg from '../../assets/auth/login_img.svg'
 import { themes } from '../../constants/colors'
 import { saveSession } from '../../lib/session'
 import { router } from 'expo-router'
+import { useToast } from '../components/ToastProvider'
 
 const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || 'http://localhost:5000'
 
@@ -17,9 +18,11 @@ const Login = () => {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const { showToast } = useToast()
+
   const onSubmit = async () => {
     if (!email || !password) {
-      Alert.alert('Missing info', 'Please enter email and password')
+      showToast({ type: 'error', title: 'Missing info', message: 'Please enter email and password.' })
       return
     }
     setLoading(true)
@@ -28,6 +31,8 @@ const Login = () => {
       if (res.status === 200) {
         const { role } = res.data
         await saveSession(res.data)
+        showToast({ type: 'success', title: 'Welcome back', message: 'Logged in successfully.' })
+
         if (role === 'student') {
           router.replace('/(student)/home')
         } else if (role === 'institute') {
@@ -37,12 +42,12 @@ const Login = () => {
         } else if (role === 'recruiter') {
           router.replace('/(recruiter)/home')
         } else {
-          Alert.alert('Login', 'Logged in')
+          showToast({ type: 'info', title: 'Login', message: 'Logged in successfully.' })
         }
       }
     } catch (e) {
       const msg = e?.response?.data?.message || e.message
-      Alert.alert('Login failed', msg)
+      showToast({ type: 'error', title: 'Login failed', message: msg })
     } finally {
       setLoading(false)
     }
@@ -52,7 +57,18 @@ const Login = () => {
   const theme = useMemo(() => (colorScheme === 'dark' ? themes.dark : themes.light), [colorScheme])
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: theme.background }} contentContainerStyle={styles.container}>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: theme.background }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
+    >
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+      keyboardDismissMode="on-drag"
+    >
       <View style={styles.hero}>
         {typeof LoginSvg === 'function' ? (
           <LoginSvg width={220} height={220} />
@@ -96,6 +112,7 @@ const Login = () => {
         </View>
       </View>
     </ScrollView>
+    </KeyboardAvoidingView>
   )
 }
 

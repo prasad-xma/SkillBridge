@@ -28,8 +28,15 @@ app.use('/courses', courseRoutes);
 // Register skill routes
 const skillRoutes = require('./routes/skillRoutes');
 app.use('/skills', skillRoutes);
+// Register recruiter routes
+const recruiterRoutes = require('./routes/recruiterRoutes');
+app.use('/api/recruiter', recruiterRoutes);
 
+const recommendRoutes = require('./routes/recommendRoutes');
+app.use('/api', recommendRoutes);
 
+const chatRoutes = require('./routes/chatRoutes');
+app.use('/api/chat', chatRoutes);
 
 
 // -------------------- server setup -------------------- //
