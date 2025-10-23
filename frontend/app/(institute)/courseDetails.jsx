@@ -150,13 +150,13 @@ export default function CourseDetails() {
         </Text>
 
         {/* Course Stats */}
-        <View style={styles.statsContainer}>
+        <View style={[styles.statsContainer, { backgroundColor: theme.card }]}>
           <View style={styles.statItem}>
             <Ionicons name="folder-outline" size={20} color={theme.primary} />
             <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
               Category
             </Text>
-            <Text style={[styles.statValue, { color: theme.text }]}>
+            <Text style={[styles.statValue, { color: theme.textSecondary }]}>
               {course.category || "N/A"}
             </Text>
           </View>
@@ -166,7 +166,7 @@ export default function CourseDetails() {
             <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
               Duration
             </Text>
-            <Text style={[styles.statValue, { color: theme.text }]}>
+            <Text style={[styles.statValue, { color: theme.textSecondary }]}>
               {course.duration}
             </Text>
           </View>
@@ -176,7 +176,7 @@ export default function CourseDetails() {
             <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
               Fee
             </Text>
-            <Text style={[styles.statValue, { color: theme.text }]}>
+            <Text style={[styles.statValue, { color: theme.textSecondary }]}>
               ${course.fees}
             </Text>
           </View>
@@ -184,7 +184,7 @@ export default function CourseDetails() {
 
         {/* Difficulty Badge */}
         {course.difficulty && (
-          <View style={styles.difficultyContainer}>
+          <View style={[styles.difficultyContainer, { backgroundColor: theme.card }]}>
             <Text style={[styles.difficultyLabel, { color: theme.textSecondary }]}>
               Difficulty Level
             </Text>

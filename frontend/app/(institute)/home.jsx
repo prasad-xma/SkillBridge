@@ -13,18 +13,20 @@ import {
   ActivityIndicator,
   Image,
   FlatList,
+  TextInput,
 } from "react-native";
 import { themes } from "../../constants/colors";
 import { getSession } from "../../lib/session";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
- 
+
 export default function InstituteHome() {
   const [user, setUser] = useState(null);
   const [courses, setCourses] = useState([]);
   const [skills, setSkills] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const scheme = useColorScheme();
   const theme = scheme === "dark" ? themes.dark : themes.light;
   const navigation = useNavigation();
@@ -113,7 +115,7 @@ export default function InstituteHome() {
               const session = await getSession();
               const token = session?.idToken;
               const courseId = course.id || course._id; // Use id field from backend
-              
+
               const response = await fetch(
                 `http://192.168.1.4:5000/courses/delete/${courseId}`,
                 {
@@ -125,13 +127,17 @@ export default function InstituteHome() {
               );
 
               let data = {};
-              try { data = await response.json(); } catch (_) {}
+              try {
+                data = await response.json();
+              } catch (_) {}
               if (!response.ok) {
                 throw new Error(data.message || "Failed to delete course");
               }
 
               // Optimistically update local state and then refetch to reflect DB
-              setCourses((prev) => prev.filter((c) => (c.id || c._id) !== courseId));
+              setCourses((prev) =>
+                prev.filter((c) => (c.id || c._id) !== courseId)
+              );
               await loadCourses();
               Alert.alert("Success", "Course deleted successfully");
             } catch (err) {
@@ -147,24 +153,32 @@ export default function InstituteHome() {
     <ScrollView
       style={[styles.container, { backgroundColor: theme.background }]}
     >
-      <View style={[styles.headerContainer, styles.headerHero]}>
+      <View
+        style={[
+          styles.headerContainer,
+          styles.headerHero,
+          { backgroundColor: theme.primary },
+        ]}
+      >
         <View style={styles.shapeOne} />
         <View style={styles.shapeTwo} />
         {/* Header Title */}
-        <View style={styles.headerTopRow}>
-          <Text style={[styles.headerTitle, { color: '#fff' }]}>Institute </Text>
-          <TouchableOpacity
-            onPress={() => router.push('/(institute)/chat')}
-            style={styles.chatIconBtn}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="chatbubble-ellipses-outline" size={24} color="#fff" />
-          </TouchableOpacity>
-        </View>
+
+<View style={styles.headerTopRow}>
+  <Text style={[styles.headerTitle, { color: theme.headerText }]}>Institute</Text>
+  <TouchableOpacity
+    onPress={() => router.push('/(institute)/chat')}
+    style={styles.chatIconBtn}
+    activeOpacity={0.8}
+  >
+    <Ionicons name="chatbubble-ellipses-outline" size={24} color={theme.headerText} />
+  </TouchableOpacity>
+</View>
+
 
         {/* Welcome User */}
         {user && (
-          <Text style={[styles.headerSubtitle, { color: '#eaf2ff' }]}>
+          <Text style={[styles.headerSubtitle, { color: theme.headerText }]}>
             Welcome, {user.fullName}
           </Text>
         )}
@@ -173,39 +187,40 @@ export default function InstituteHome() {
         <View
           style={[
             styles.programCard,
-            { backgroundColor: 'rgba(255,255,255,0.12)', borderColor: 'rgba(255,255,255,0.2)', borderWidth: 1, borderRadius: 12 }
+            {
+              backgroundColor: "rgba(255,255,255,0.12)",
+              borderColor: "rgba(255,255,255,0.2)",
+              borderWidth: 1,
+              borderRadius: 12,
+            },
           ]}
         >
           <View style={styles.programRow}>
             <Ionicons
               name="bookmarks-outline"
               size={28}
-              color="#ffffff"
+              color={theme.headerText}
               style={{ marginRight: 12 }}
             />
             <View style={{ flex: 1 }}>
-              <Text
-                style={[styles.programLabel, { color: '#eaf2ff' }]}
-              >
+              <Text style={[styles.programLabel, { color: theme.headerText }]}>
                 Total Courses
               </Text>
-              <Text style={[styles.programValue, { color: '#fff' }]}>
+              <Text style={[styles.programValue, { color: theme.headerText }]}>
                 {courses.length}
               </Text>
             </View>
             <Ionicons
               name="bulb-outline"
               size={28}
-              color="#ffffff"
+              color={theme.headerText}
               style={{ marginRight: 12 }}
             />
             <View style={{ flex: 1 }}>
-              <Text
-                style={[styles.programLabel, { color: '#eaf2ff' }]}
-              >
+              <Text style={[styles.programLabel, { color: theme.headerText }]}>
                 Total Skills
               </Text>
-              <Text style={[styles.programValue, { color: '#fff' }]}>
+              <Text style={[styles.programValue, { color: theme.headerText }]}>
                 {skills.length}
               </Text>
             </View>
@@ -213,111 +228,355 @@ export default function InstituteHome() {
         </View>
       </View>
 
+      <View
+        style={[
+          styles.searchContainer,
+          { backgroundColor: theme.card2, borderColor: theme.border },
+        ]}
+      >
+        <Ionicons
+          name="search"
+          size={18}
+          color={theme.textSecondary}
+          style={{ marginRight: 8 }}
+        />
+        <TextInput
+          style={[styles.searchInput, { color: theme.text }]}
+          placeholder="Search courses and skills"
+          placeholderTextColor={theme.textSecondary}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          returnKeyType="search"
+        />
+        {!!searchQuery && (
+          <TouchableOpacity onPress={() => setSearchQuery("")}>
+            <Ionicons
+              name="close-circle"
+              size={18}
+              color={theme.textSecondary}
+            />
+          </TouchableOpacity>
+        )}
+      </View>
+
       {loading && (
         <View style={styles.centerState}>
-          <ActivityIndicator size="large" color="#007bff" />
-          <Text style={[styles.stateText, { color: theme.textSecondary }]}>Loading courses...</Text>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={[styles.stateText, { color: theme.textSecondary }]}>
+            Loading courses...
+          </Text>
         </View>
       )}
 
       {!!error && !loading && (
         <View style={styles.centerState}>
-          <Ionicons name="warning-outline" size={22} color="#ff4d4f" />
-          <Text style={[styles.stateText, { color: theme.textSecondary }]}>{error}</Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={loadCourses}>
-            <Text style={styles.retryText}>Retry</Text>
+          <Ionicons name="warning-outline" size={22} color={theme.toastError} />
+          <Text style={[styles.stateText, { color: theme.textSecondary }]}>
+            {error}
+          </Text>
+          <TouchableOpacity
+            style={[
+              styles.retryBtn,
+              { backgroundColor: theme.secondarySurface },
+            ]}
+            onPress={loadCourses}
+          >
+            <Text style={[styles.retryText, { color: theme.primary }]}>
+              Retry
+            </Text>
           </TouchableOpacity>
         </View>
       )}
 
       {!loading && !error && courses.length === 0 && (
         <View style={styles.centerState}>
-          <Ionicons name="school-outline" size={26} color="#007bff" />
-          <Text style={[styles.stateText, { color: theme.textSecondary }]}>No courses found</Text>
+          <Ionicons name="school-outline" size={26} color={theme.primary} />
+          <Text style={[styles.stateText, { color: theme.textSecondary }]}>
+            No courses found
+          </Text>
         </View>
       )}
 
       {/* Latest Courses */}
       {!loading && !error && courses.length > 0 && (
-        <View style={{ marginTop: 4 }}>
+        <View style={{ marginTop: 20, backgroundColor: theme.card }}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Latest Courses</Text>
-            <TouchableOpacity onPress={() => router.push('/(institute)/courses')}>
-              <Text style={styles.sectionLink}>Read more</Text>
+            <Text
+              style={[
+                styles.label,
+                {
+                  color: theme.textSecondary,
+                  fontWeight: "bold",
+                  marginTop: 20,
+                  marginStart: 10,
+                },
+              ]}
+            >
+              Latest Courses
+            </Text>
+            <TouchableOpacity
+              onPress={() => router.push("/(institute)/courses")}
+            >
+              <Text style={[styles.sectionLink, { color: theme.primary }]}>
+                Read more
+              </Text>
             </TouchableOpacity>
           </View>
-          <FlatList
-            data={[...courses].sort((a,b)=> new Date(b.createdAt||0)-new Date(a.createdAt||0)).slice(0,4)}
-            keyExtractor={(item, index) => String(item?.id || item?._id || index)}
-            renderItem={({ item }) => (
-              <View style={styles.miniCard}>
-                <View style={{ flexDirection:'row', alignItems:'center', marginBottom: 6 }}>
-                  <Ionicons name="school-outline" size={18} color="#0d6efd" />
-                  <Text style={[styles.smallTitle, { marginLeft: 8 }]} numberOfLines={1}>{item.courseName}</Text>
-                </View>
-                {!!item.category && (
-                  <View style={[styles.badge, { alignSelf:'flex-start', marginTop: 2 }]}> 
-                    <Ionicons name="pricetag-outline" size={12} color="#0d6efd" />
-                    <Text style={[styles.badgeText, { marginLeft: 4 }]}>{item.category}</Text>
-                  </View>
+          {(() => {
+            const q = searchQuery.trim().toLowerCase();
+            const filteredCourses = !q
+              ? courses
+              : courses.filter(
+                  (c) =>
+                    (c?.courseName || "").toLowerCase().includes(q) ||
+                    (c?.category || "").toLowerCase().includes(q) ||
+                    (c?.description || "").toLowerCase().includes(q)
+                );
+            const items = [...filteredCourses]
+              .sort(
+                (a, b) =>
+                  new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+              )
+              .slice(0, 4);
+            return (
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  justifyContent: "space-between",
+                  paddingHorizontal: 12,
+                  paddingBottom: 6,
+                }}
+              >
+                {items.length === 0 ? (
+                  <Text
+                    style={{ color: theme.textSecondary, paddingVertical: 10 }}
+                  >
+                    No matching courses
+                  </Text>
+                ) : (
+                  items.map((item, index) => (
+                    <View
+                      key={String(item?.id || item?._id || index)}
+                      style={[
+                        styles.miniCard,
+                        { backgroundColor: theme.card2 },
+                      ]}
+                    >
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          marginBottom: 6,
+                        }}
+                      >
+                        <Ionicons
+                          name="school-sharp"
+                          size={18}
+                          color={theme.primary}
+                        />
+                        <Text
+                          style={[
+                            styles.smallTitle,
+                            [styles.value, { color: theme.text }],
+                            { marginLeft: 8 },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {item.courseName}
+                        </Text>
+                      </View>
+                      {!!item.category && (
+                        <View
+                          style={[
+                            styles.badge,
+                            {
+                              alignSelf: "flex-start",
+                              marginTop: 2,
+                              backgroundColor: theme.secondarySurface,
+                            },
+                          ]}
+                        >
+                          <Ionicons
+                            name="pricetag-sharp"
+                            size={12}
+                            color={theme.primary}
+                          />
+                          <Text
+                            style={[
+                              styles.badgeText,
+                              { marginLeft: 4, color: theme.secondary },
+                            ]}
+                          >
+                            {item.category}
+                          </Text>
+                        </View>
+                      )}
+                      {!!item.description && (
+                        <Text
+                          style={[
+                            styles.smallDesc,
+                            { marginLeft: 4, color: theme.secondary },
+                          ]}
+                          numberOfLines={2}
+                        >
+                          {item.description}
+                        </Text>
+                      )}
+                      <TouchableOpacity
+                        style={[
+                          styles.smallBtn,
+                          { backgroundColor: theme.primary },
+                        ]}
+                        onPress={() => onReadMore(item)}
+                      >
+                        <Text
+                          style={[
+                            styles.smallBtnText,
+                            { color: theme.headerText },
+                          ]}
+                        >
+                          View
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))
                 )}
-                {!!item.description && (
-                  <Text style={styles.smallDesc} numberOfLines={2}>{item.description}</Text>
-                )}
-                <TouchableOpacity style={styles.smallBtn} onPress={() => onReadMore(item)}>
-                  <Text style={styles.smallBtnText}>View</Text>
-                </TouchableOpacity>
               </View>
-            )}
-            numColumns={2}
-            columnWrapperStyle={{ justifyContent: 'space-between' }}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 6 }}
-          />
+            );
+          })()}
         </View>
       )}
 
       {/* Latest Skills */}
-      <View style={{ marginTop: 20, marginBottom: 10 }}>
+      <View
+        style={{ marginTop: 20, marginBottom: 30, backgroundColor: theme.card }}
+      >
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Latest Skills</Text>
-          <TouchableOpacity onPress={() => router.push('/(institute)/skills')}>
-            <Text style={styles.sectionLink}>Read more</Text>
+          <Text
+            style={[
+              styles.label,
+              {
+                color: theme.textSecondary,
+                marginTop: 20,
+                fontWeight: "bold",
+                marginStart: 10,
+              },
+            ]}
+          >
+            Latest Skills
+          </Text>
+          <TouchableOpacity onPress={() => router.push("/(institute)/skills")}>
+            <Text style={[styles.sectionLink, { color: theme.primary }]}>
+              Read more
+            </Text>
           </TouchableOpacity>
         </View>
-        <FlatList
-          data={[...skills].sort((a,b)=> new Date(b.createdAt||0)-new Date(a.createdAt||0)).slice(0,4)}
-          keyExtractor={(item, index) => String(item?.id || item?._id || index)}
-          renderItem={({ item }) => (
-            <View style={styles.miniCard}>
-              <View style={{ flexDirection:'row', alignItems:'center', marginBottom: 6 }}>
-                <Ionicons name="bulb-outline" size={18} color="#0d6efd" />
-                <Text style={[styles.smallTitle, { marginLeft: 8 }]} numberOfLines={1}>{item.skillName}</Text>
-              </View>
-              {!!item.category && (
-                <View style={[styles.badge, { alignSelf:'flex-start', marginTop: 2 }]}> 
-                  <Ionicons name="grid-outline" size={12} color="#0d6efd" />
-                  <Text style={[styles.badgeText, { marginLeft: 4 }]}>{item.category}</Text>
+        {(() => {
+          const q = searchQuery.trim().toLowerCase();
+          const filteredSkills = !q
+            ? skills
+            : skills.filter(
+                (s) =>
+                  (s?.skillName || "").toLowerCase().includes(q) ||
+                  (s?.category || "").toLowerCase().includes(q) ||
+                  (s?.description || "").toLowerCase().includes(q)
+              );
+          const items = [...filteredSkills]
+            .sort(
+              (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+            )
+            .slice(0, 4);
+          if (items.length === 0) {
+            return (
+              <Text style={{ color: theme.textSecondary, paddingVertical: 10 }}>
+                No matching skills
+              </Text>
+            );
+          }
+          return (
+            <View style={{ flexDirection:'row', flexWrap:'wrap', justifyContent:'space-between', paddingHorizontal: 12, paddingBottom: 6 }}>
+              {items.map((item, index) => (
+                <View
+                  key={String(item?.id || item?._id || index)}
+                  style={[styles.miniCard, { backgroundColor: theme.card2 }]}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      marginBottom: 6,
+                    }}
+                  >
+                    <Ionicons name="bulb-outline" size={18} color={theme.primary} />
+                    <Text
+                      style={[
+                        styles.smallTitle,
+                        [styles.value, { color: theme.text }],
+                        { marginLeft: 8 },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {item.skillName}
+                    </Text>
+                  </View>
+                  {!!item.category && (
+                    <View
+                      style={[
+                        styles.badge,
+                        {
+                          alignSelf: "flex-start",
+                          marginTop: 2,
+                          backgroundColor: theme.secondarySurface,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name="pricetag-sharp"
+                        size={12}
+                        color={theme.primary}
+                      />
+                      <Text
+                        style={[
+                          styles.badgeText,
+                          { marginLeft: 4, color: theme.secondary },
+                        ]}
+                      >
+                        {item.category}
+                      </Text>
+                    </View>
+                  )}
+                  {!!item.description && (
+                    <Text
+                      style={[
+                        styles.smallDesc,
+                        { marginLeft: 4, color: theme.secondary },
+                      ]}
+                      numberOfLines={2}
+                    >
+                      {item.description}
+                    </Text>
+                  )}
+                  <TouchableOpacity
+                    style={[styles.smallBtn, { backgroundColor: theme.primary }]}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/(institute)/skillDetails",
+                        params: { skill: JSON.stringify(item) },
+                      })
+                    }
+                  >
+                    <Text
+                      style={[styles.smallBtnText, { color: theme.headerText }]}
+                    >
+                      View
+                    </Text>
+                  </TouchableOpacity>
                 </View>
-              )}
-              {!!item.description && (
-                <Text style={styles.smallDesc} numberOfLines={2}>{item.description}</Text>
-              )}
-              <TouchableOpacity style={styles.smallBtn} onPress={() => router.push({ pathname: '/(institute)/skillDetails', params: { skill: JSON.stringify(item) } })}>
-                <Text style={styles.smallBtnText}>View</Text>
-              </TouchableOpacity>
+              ))}
             </View>
-          )}
-          ListEmptyComponent={() => (
-            <View style={{ paddingHorizontal: 12 }}>
-              <Text style={{ color: '#666' }}>No skills found</Text>
-            </View>
-          )}
-          numColumns={2}
-          columnWrapperStyle={{ justifyContent: 'space-between' }}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 12 }}
-        />
+          );
+        })()}
       </View>
     </ScrollView>
   );
@@ -406,19 +665,66 @@ const styles = StyleSheet.create({
   },
 
   // Sections
-  sectionHeader: { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal: 12, marginBottom: 8 },
-  sectionTitle: { fontSize: 18, fontWeight: '700' },
-  sectionLink: { color:'#0d6efd', fontWeight: '600' },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
+    marginBottom: 8,
+  },
+  sectionTitle: { fontSize: 18, fontWeight: "700" },
+  sectionLink: { color: "#0d6efd", fontWeight: "600" },
+
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    marginHorizontal: 12,
+    marginBottom: 12,
+  },
+  searchInput: { flex: 1, fontSize: 14 },
 
   // Small horizontal cards
-  smallCard: { width: 240, marginRight: 12, backgroundColor:'#fff', borderRadius:12, padding:12, shadowColor:'#000', shadowOpacity:0.08, shadowOffset:{ width:0, height:2 }, shadowRadius:6, elevation:2 },
-  smallTitle: { fontSize: 16, fontWeight:'700' },
-  smallDesc: { fontSize: 12, color:'#555', marginTop:6 },
-  smallBtn: { alignSelf:'flex-end', backgroundColor:'#0d6efd', paddingHorizontal:12, paddingVertical:6, borderRadius:8, marginTop:10 },
-  smallBtnText: { color:'#fff', fontWeight:'700', fontSize:12 },
+  smallCard: {
+    width: 240,
+    marginRight: 12,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  smallTitle: { fontSize: 16, fontWeight: "700" },
+  smallDesc: { fontSize: 12, color: "#555", marginTop: 6 },
+  smallBtn: {
+    alignSelf: "flex-end",
+    backgroundColor: "#0d6efd",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  smallBtnText: { color: "#fff", fontWeight: "700", fontSize: 12 },
 
   // Grid mini card (2-column)
-  miniCard: { flexBasis: '48%', backgroundColor:'#fff', borderRadius:12, padding:12, marginBottom:12, shadowColor:'#000', shadowOpacity:0.08, shadowOffset:{ width:0, height:2 }, shadowRadius:6, elevation:2 },
+  miniCard: {
+    flexBasis: "48%",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 2,
+  },
 
   /* General Card */
   card: {
@@ -530,29 +836,29 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   headerHero: {
-    backgroundColor: '#0d6efd',
+    backgroundColor: "#0d6efd",
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     paddingTop: 28,
     paddingBottom: 24,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: 16,
   },
   shapeOne: {
-    position: 'absolute',
+    position: "absolute",
     width: 160,
     height: 160,
     borderRadius: 80,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: "rgba(255,255,255,0.12)",
     top: -40,
     right: -40,
   },
   shapeTwo: {
-    position: 'absolute',
+    position: "absolute",
     width: 220,
     height: 220,
     borderRadius: 110,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: "rgba(255,255,255,0.08)",
     bottom: -110,
     left: -60,
   },
@@ -568,15 +874,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 14,
   },
-  programCard: {
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 5,
-    elevation: 2,
-  },
+  programCard: { padding: 16 },
   programRow: {
     flexDirection: "row",
     alignItems: "center",

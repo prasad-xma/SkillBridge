@@ -91,7 +91,7 @@ export default function SkillDetails() {
       case 'technical':
         return 'settings';
       default:
-        return 'star';
+        return 'trophy';
     }
   };
 
@@ -168,13 +168,13 @@ export default function SkillDetails() {
         </Text>
 
         {/* Skill Stats */}
-        <View style={styles.statsContainer}>
+        <View style={[styles.statsContainer, { backgroundColor: theme.card }]}>
           <View style={styles.statItem}>
             <Ionicons name="folder-outline" size={20} color={theme.primary} />
             <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
               Category
             </Text>
-            <Text style={[styles.statValue, { color: theme.text }]}>
+            <Text style={[styles.statValue, { color: theme.textSecondary }]}>
               {skill.category}
             </Text>
           </View>
@@ -184,7 +184,7 @@ export default function SkillDetails() {
             <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
               Duration
             </Text>
-            <Text style={[styles.statValue, { color: theme.text }]}>
+            <Text style={[styles.statValue, { color: theme.textSecondary }]}>
               {skill.duration}
             </Text>
           </View>
@@ -194,7 +194,7 @@ export default function SkillDetails() {
             <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
               Outcomes
             </Text>
-            <Text style={[styles.statValue, { color: theme.text }]}>
+            <Text style={[styles.statValue, { color: theme.textSecondary }]}>
               {skill.learningOutcomes?.length || 0}
             </Text>
           </View>

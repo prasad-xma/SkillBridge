@@ -16,11 +16,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { themes } from "../../constants/colors";
 import { getSession } from "../../lib/session";
+import Constants from "expo-constants";
+import { API_BASE as ENV_API_BASE } from "@env";
 
 export default function AddSkill() {
   const router = useRouter();
   const scheme = useColorScheme();
   const theme = scheme === "dark" ? themes.dark : themes.light;
+  const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || "http://192.168.1.4:5000";
 
   const [skillName, setSkillName] = useState("");
   const [description, setDescription] = useState("");
@@ -66,46 +69,73 @@ export default function AddSkill() {
     setLearningOutcomes(newOutcomes);
   };
 
+  // Reset form to initial state to add another skill
+  const resetForm = () => {
+    setSkillName("");
+    setDescription("");
+    setCategory("");
+    setDifficulty("");
+    setDuration("");
+    setPrerequisites([]);
+    setLearningOutcomes([]);
+    setPrerequisiteInput("");
+    setOutcomeInput("");
+  };
+
   // Handle save
   const handleSave = async () => {
     if (!skillName || !description || !category || !difficulty || !duration) {
-      alert("Please fill in all required fields.");
+      Alert.alert("Missing info", "Please fill in all required fields.");
       return;
     }
 
     setLoading(true);
     try {
       const session = await getSession();
-      const token = session?.idToken;
+      const token = session?.idToken || session?.token || session?.accessToken;
 
-      const response = await fetch("http://192.168.1.4:5000/skills/add", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token ? `Bearer ${token}` : "",
-        },
-        body: JSON.stringify({
-          skillName,
-          description,
-          category,
-          difficulty,
-          duration,
-          prerequisites: Array.isArray(prerequisites) ? prerequisites : [],
-          learningOutcomes: Array.isArray(learningOutcomes) ? learningOutcomes : [],
-        }),
-      });
+      const urls = [
+        `${API_BASE}/skills/add`,
+        `${API_BASE}/api/skills/add`,
+        `${API_BASE}/api/skills`,
+      ];
 
-      let data = {};
-      try { data = await response.json(); } catch (_) {}
+      let lastErr = null;
+      for (const url of urls) {
+        try {
+          const response = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: token ? `Bearer ${token}` : "",
+            },
+            body: JSON.stringify({
+              skillName,
+              description,
+              category,
+              difficulty,
+              duration,
+              prerequisites: Array.isArray(prerequisites) ? prerequisites : [],
+              learningOutcomes: Array.isArray(learningOutcomes) ? learningOutcomes : [],
+            }),
+          });
 
-      if (!response.ok) {
-        throw new Error(data?.message || `Failed to add skill (status ${response.status})`);
+          let data = {};
+          try { data = await response.json(); } catch (_) {}
+          if (!response.ok) throw new Error(data?.message || `Failed (POST ${url} -> ${response.status})`);
+
+          // Auto-clear the form and remain on the page for adding another
+          resetForm();
+          Alert.alert("Success", "Skill added successfully!");
+          lastErr = null;
+          break;
+        } catch (e) {
+          lastErr = e;
+        }
       }
-
-      alert("Skill added successfully!");
-      router.back();
+      if (lastErr) throw lastErr;
     } catch (error) {
-      alert(error?.message || "Failed to add skill");
+      Alert.alert("Error", error?.message || "Failed to add skill");
     } finally {
       setLoading(false);
     }
