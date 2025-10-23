@@ -9,124 +9,309 @@ import {
   useColorScheme,
   TouchableOpacity,
   Dimensions,
+  Alert,
+  ActivityIndicator,
+  Image,
+  FlatList,
 } from "react-native";
 import { themes } from "../../constants/colors";
 import { getSession } from "../../lib/session";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { router } from "expo-router";
  
 export default function InstituteHome() {
   const [user, setUser] = useState(null);
   const [courses, setCourses] = useState([]);
+  const [skills, setSkills] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const scheme = useColorScheme();
   const theme = scheme === "dark" ? themes.dark : themes.light;
   const navigation = useNavigation();
 
   const deviceWidth = Dimensions.get("window").width - 30; // padding adjustment
 
+  const loadCourses = async () => {
+    try {
+      setError(null);
+      setLoading(true);
+      const response = await fetch("http://192.168.1.4:5000/courses");
+      const data = await response.json();
+      if (response.ok) setCourses(data);
+      else setError(data?.message || "Failed to load courses");
+    } catch (error) {
+      console.log("Error fetching courses:", error);
+      setError("Could not fetch courses");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadSkills = async () => {
+    try {
+      const res = await fetch("http://192.168.1.4:5000/skills");
+      const data = await res.json();
+      if (res.ok) setSkills(Array.isArray(data) ? data : []);
+    } catch (e) {
+      // ignore gracefully for home summary
+    }
+  };
+
   useEffect(() => {
     (async () => {
       const s = await getSession();
       setUser(s);
 
-      // Fetch courses from backend (replace with your backend URL)
-      try {
-        const response = await fetch("http://172.19.81.244:5000/courses");
-        const data = await response.json();
-        if (response.ok) setCourses(data);
-      } catch (error) {
-        console.log("Error fetching courses:", error);
-      }
+      await Promise.all([loadCourses(), loadSkills()]);
     })();
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadCourses();
+      loadSkills();
+      return undefined;
+    }, [])
+  );
+
+  const onEditCourse = (course) => {
+    // Navigate using expo-router and pass course via params
+    try {
+      router.push({
+        pathname: "/(institute)/editCourse",
+        params: { course: JSON.stringify(course) },
+      });
+    } catch (e) {
+      // fallback to react-navigation if available
+      navigation?.navigate?.("editCourse", { course });
+    }
+  };
+
+  const onReadMore = (course) => {
+    try {
+      router.push({
+        pathname: "/(institute)/courseDetails",
+        params: { course: JSON.stringify(course) },
+      });
+    } catch (e) {
+      // fallback to react-navigation if available
+      navigation?.navigate?.("courseDetails", { course });
+    }
+  };
+
+  const onDeleteCourse = (course) => {
+    Alert.alert(
+      "Delete Course",
+      "Are you sure you want to delete this course?",
+      [
+        { text: "No", style: "cancel" },
+        {
+          text: "Yes",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const session = await getSession();
+              const token = session?.idToken;
+              const courseId = course.id || course._id; // Use id field from backend
+              
+              const response = await fetch(
+                `http://192.168.1.4:5000/courses/delete/${courseId}`,
+                {
+                  method: "DELETE",
+                  headers: {
+                    Authorization: token ? `Bearer ${token}` : "",
+                  },
+                }
+              );
+
+              let data = {};
+              try { data = await response.json(); } catch (_) {}
+              if (!response.ok) {
+                throw new Error(data.message || "Failed to delete course");
+              }
+
+              // Optimistically update local state and then refetch to reflect DB
+              setCourses((prev) => prev.filter((c) => (c.id || c._id) !== courseId));
+              await loadCourses();
+              Alert.alert("Success", "Course deleted successfully");
+            } catch (err) {
+              Alert.alert("Error", err.message || "Could not delete course");
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: theme.background }]}
     >
-      <View style={[styles.headerContainer, { backgroundColor: theme.card }]}>
+      <View style={[styles.headerContainer, styles.headerHero]}>
+        <View style={styles.shapeOne} />
+        <View style={styles.shapeTwo} />
         {/* Header Title */}
-        <Text style={[styles.headerTitle, { color: theme.text }]}>
-          Institute Details
+        <Text style={[styles.headerTitle, { color: '#fff' }]}>
+          Institute 
         </Text>
 
         {/* Welcome User */}
         {user && (
-          <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
+          <Text style={[styles.headerSubtitle, { color: '#eaf2ff' }]}>
             Welcome, {user.fullName}
           </Text>
         )}
 
         {/* Program Overview Card */}
         <View
-          style={[styles.programCard, { backgroundColor: theme.background }]}
+          style={[
+            styles.programCard,
+            { backgroundColor: 'rgba(255,255,255,0.12)', borderColor: 'rgba(255,255,255,0.2)', borderWidth: 1, borderRadius: 12 }
+          ]}
         >
           <View style={styles.programRow}>
             <Ionicons
-              name="bookmarks-sharp"
+              name="bookmarks-outline"
               size={28}
-              color="#007bff"
+              color="#ffffff"
               style={{ marginRight: 12 }}
             />
             <View style={{ flex: 1 }}>
               <Text
-                style={[styles.programLabel, { color: theme.textSecondary }]}
+                style={[styles.programLabel, { color: '#eaf2ff' }]}
               >
                 Total Courses
               </Text>
-              <Text style={[styles.programValue, { color: theme.primary }]}>
+              <Text style={[styles.programValue, { color: '#fff' }]}>
                 {courses.length}
+              </Text>
+            </View>
+            <Ionicons
+              name="bulb-outline"
+              size={28}
+              color="#ffffff"
+              style={{ marginRight: 12 }}
+            />
+            <View style={{ flex: 1 }}>
+              <Text
+                style={[styles.programLabel, { color: '#eaf2ff' }]}
+              >
+                Total Skills
+              </Text>
+              <Text style={[styles.programValue, { color: '#fff' }]}>
+                {skills.length}
               </Text>
             </View>
           </View>
         </View>
       </View>
 
-      {/* Courses List */}
-      {courses.map((course) => (
-        <View
-          key={course._id}
-          style={[
-            styles.courseCard,
-            { width: deviceWidth, backgroundColor: "#fff" },
-          ]}
-        >
-          <Text style={styles.courseName}>{course.courseName}</Text>
-          <Text style={styles.courseDuration}>Duration: {course.duration}</Text>
-          <Text style={styles.courseFee}>Fee: ${course.fees}</Text>
+      {loading && (
+        <View style={styles.centerState}>
+          <ActivityIndicator size="large" color="#007bff" />
+          <Text style={[styles.stateText, { color: theme.textSecondary }]}>Loading courses...</Text>
+        </View>
+      )}
 
-          {/* Action Buttons */}
-          <View style={styles.courseActions}>
-            <TouchableOpacity
-              style={styles.actionBtn}
-              onPress={() => onEditCourse(course._id)}
-            >
-              <Ionicons name="create-outline" size={20} color="#007bff" />
-              <Text style={styles.actionText}>Edit</Text>
-            </TouchableOpacity>
+      {!!error && !loading && (
+        <View style={styles.centerState}>
+          <Ionicons name="warning-outline" size={22} color="#ff4d4f" />
+          <Text style={[styles.stateText, { color: theme.textSecondary }]}>{error}</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={loadCourses}>
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
-            <TouchableOpacity
-              style={styles.actionBtn}
-              onPress={() => onDeleteCourse(course._id)}
-            >
-              <Ionicons name="trash-sharp" size={20} color="#ff4d4f" />
-              <Text style={styles.actionText}>Delete</Text>
-            </TouchableOpacity>
+      {!loading && !error && courses.length === 0 && (
+        <View style={styles.centerState}>
+          <Ionicons name="school-outline" size={26} color="#007bff" />
+          <Text style={[styles.stateText, { color: theme.textSecondary }]}>No courses found</Text>
+        </View>
+      )}
 
-            <TouchableOpacity
-              style={styles.readMoreContainer}
-              // onPress={() => navigation.navigate("CourseDetails", { courseId: course._id })}
-            >
-              <Text style={styles.readMoreText}>Read more</Text>
-              <Ionicons
-                name="arrow-forward-outline"
-                size={18}
-                color="#007bff"
-                style={{ marginLeft: 4 }}
-              />
+      {/* Latest Courses */}
+      {!loading && !error && courses.length > 0 && (
+        <View style={{ marginTop: 4 }}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Latest Courses</Text>
+            <TouchableOpacity onPress={() => router.push('/(institute)/courses')}>
+              <Text style={styles.sectionLink}>Read more</Text>
             </TouchableOpacity>
           </View>
+          <FlatList
+            data={[...courses].sort((a,b)=> new Date(b.createdAt||0)-new Date(a.createdAt||0)).slice(0,4)}
+            keyExtractor={(item, index) => String(item?.id || item?._id || index)}
+            renderItem={({ item }) => (
+              <View style={styles.miniCard}>
+                <View style={{ flexDirection:'row', alignItems:'center', marginBottom: 6 }}>
+                  <Ionicons name="school-outline" size={18} color="#0d6efd" />
+                  <Text style={[styles.smallTitle, { marginLeft: 8 }]} numberOfLines={1}>{item.courseName}</Text>
+                </View>
+                {!!item.category && (
+                  <View style={[styles.badge, { alignSelf:'flex-start', marginTop: 2 }]}> 
+                    <Ionicons name="pricetag-outline" size={12} color="#0d6efd" />
+                    <Text style={[styles.badgeText, { marginLeft: 4 }]}>{item.category}</Text>
+                  </View>
+                )}
+                {!!item.description && (
+                  <Text style={styles.smallDesc} numberOfLines={2}>{item.description}</Text>
+                )}
+                <TouchableOpacity style={styles.smallBtn} onPress={() => onReadMore(item)}>
+                  <Text style={styles.smallBtnText}>View</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            numColumns={2}
+            columnWrapperStyle={{ justifyContent: 'space-between' }}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 6 }}
+          />
         </View>
-      ))}
+      )}
+
+      {/* Latest Skills */}
+      <View style={{ marginTop: 20, marginBottom: 10 }}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Latest Skills</Text>
+          <TouchableOpacity onPress={() => router.push('/(institute)/skills')}>
+            <Text style={styles.sectionLink}>Read more</Text>
+          </TouchableOpacity>
+        </View>
+        <FlatList
+          data={[...skills].sort((a,b)=> new Date(b.createdAt||0)-new Date(a.createdAt||0)).slice(0,4)}
+          keyExtractor={(item, index) => String(item?.id || item?._id || index)}
+          renderItem={({ item }) => (
+            <View style={styles.miniCard}>
+              <View style={{ flexDirection:'row', alignItems:'center', marginBottom: 6 }}>
+                <Ionicons name="bulb-outline" size={18} color="#0d6efd" />
+                <Text style={[styles.smallTitle, { marginLeft: 8 }]} numberOfLines={1}>{item.skillName}</Text>
+              </View>
+              {!!item.category && (
+                <View style={[styles.badge, { alignSelf:'flex-start', marginTop: 2 }]}> 
+                  <Ionicons name="grid-outline" size={12} color="#0d6efd" />
+                  <Text style={[styles.badgeText, { marginLeft: 4 }]}>{item.category}</Text>
+                </View>
+              )}
+              {!!item.description && (
+                <Text style={styles.smallDesc} numberOfLines={2}>{item.description}</Text>
+              )}
+              <TouchableOpacity style={styles.smallBtn} onPress={() => router.push({ pathname: '/(institute)/skillDetails', params: { skill: JSON.stringify(item) } })}>
+                <Text style={styles.smallBtnText}>View</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          ListEmptyComponent={() => (
+            <View style={{ paddingHorizontal: 12 }}>
+              <Text style={{ color: '#666' }}>No skills found</Text>
+            </View>
+          )}
+          numColumns={2}
+          columnWrapperStyle={{ justifyContent: 'space-between' }}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 12 }}
+        />
+      </View>
     </ScrollView>
   );
 }
@@ -137,11 +322,43 @@ const styles = StyleSheet.create({
     padding: 15,
     backgroundColor: "#f4f6f9",
   },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  centerState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 30,
+    gap: 8,
+  },
+  stateText: {
+    fontSize: 14,
+  },
+  retryBtn: {
+    marginTop: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: "#e7f1ff",
+  },
+  retryText: { color: "#007bff", fontWeight: "600" },
   courseActions: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginTop: 10,
+  },
+  readMoreRow: {
+    marginTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+    paddingTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
   },
 
   actionBtn: {
@@ -180,6 +397,21 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 14,
   },
+
+  // Sections
+  sectionHeader: { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal: 12, marginBottom: 8 },
+  sectionTitle: { fontSize: 18, fontWeight: '700' },
+  sectionLink: { color:'#0d6efd', fontWeight: '600' },
+
+  // Small horizontal cards
+  smallCard: { width: 240, marginRight: 12, backgroundColor:'#fff', borderRadius:12, padding:12, shadowColor:'#000', shadowOpacity:0.08, shadowOffset:{ width:0, height:2 }, shadowRadius:6, elevation:2 },
+  smallTitle: { fontSize: 16, fontWeight:'700' },
+  smallDesc: { fontSize: 12, color:'#555', marginTop:6 },
+  smallBtn: { alignSelf:'flex-end', backgroundColor:'#0d6efd', paddingHorizontal:12, paddingVertical:6, borderRadius:8, marginTop:10 },
+  smallBtnText: { color:'#fff', fontWeight:'700', fontSize:12 },
+
+  // Grid mini card (2-column)
+  miniCard: { flexBasis: '48%', backgroundColor:'#fff', borderRadius:12, padding:12, marginBottom:12, shadowColor:'#000', shadowOpacity:0.08, shadowOffset:{ width:0, height:2 }, shadowRadius:6, elevation:2 },
 
   /* General Card */
   card: {
@@ -224,24 +456,28 @@ const styles = StyleSheet.create({
   /* Course Card */
   courseCard: {
     borderRadius: 12,
-    padding: 15,
-    marginBottom: 15,
-    height: 150, // fixed height
+    padding: 14,
+    marginBottom: 12,
+    width: "48%",
+    minHeight: 190,
     justifyContent: "space-between",
     shadowColor: "#000",
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 5,
-    elevation: 3,
+    shadowRadius: 6,
+    elevation: 2,
     backgroundColor: "#fff",
   },
 
   courseName: {
     fontSize: 20,
     fontWeight: "700",
-    borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
-    paddingBottom: 5,
+    paddingBottom: 2,
+  },
+  courseDescription: {
+    fontSize: 13,
+    marginTop: 6,
+    color: "#555",
   },
 
   courseDuration: {
@@ -263,14 +499,41 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     padding: 20,
-    // borderBottomLeftRadius: 20,
-    // borderBottomRightRadius: 20,
-    // shadowColor: "#000",
-    // shadowOpacity: 0.1,
-    // shadowOffset: { width: 0, height: 3 },
-    // shadowRadius: 5,
-    // elevation: 5,
-    // marginBottom: 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 5,
+    elevation: 5,
+    marginBottom: 20,
+  },
+  headerHero: {
+    backgroundColor: '#0d6efd',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    paddingTop: 28,
+    paddingBottom: 24,
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  shapeOne: {
+    position: 'absolute',
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    top: -40,
+    right: -40,
+  },
+  shapeTwo: {
+    position: 'absolute',
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    bottom: -110,
+    left: -60,
   },
   headerTitle: {
     fontSize: 26,
@@ -286,12 +549,12 @@ const styles = StyleSheet.create({
   },
   programCard: {
     padding: 16,
-    // borderRadius: 12,
-    // shadowColor: "#000",
-    // shadowOpacity: 0.05,
-    // shadowOffset: { width: 0, height: 2 },
-    // shadowRadius: 5,
-    // elevation: 2,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 5,
+    elevation: 2,
   },
   programRow: {
     flexDirection: "row",
@@ -305,5 +568,45 @@ const styles = StyleSheet.create({
   programValue: {
     fontSize: 20,
     fontWeight: "700",
+  },
+  metaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginBottom: 8,
+  },
+  badge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: "#f1f7ff",
+  },
+  badgeText: {
+    fontSize: 12,
+    color: "#0a58ca",
+    fontWeight: "600",
+  },
+  statsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    gap: 10,
+    marginTop: 8,
+  },
+  statChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    backgroundColor: "#f8f9fa",
+  },
+  statText: {
+    fontSize: 12,
+    color: "#333",
   },
 });
