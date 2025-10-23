@@ -37,6 +37,20 @@ async function addSkill(req, res) {
       thumbnailUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
     }
 
+    // Safely parse array-like fields whether they arrive as JSON strings or arrays
+    const parseArray = (val) => {
+      if (Array.isArray(val)) return val;
+      if (typeof val === 'string') {
+        try {
+          const parsed = JSON.parse(val);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      }
+      return [];
+    };
+
     const skillId = uuidv4();
     const newSkill = {
       id: skillId,
@@ -45,8 +59,8 @@ async function addSkill(req, res) {
       category,
       difficulty,
       duration,
-      prerequisites: prerequisites ? JSON.parse(prerequisites) : [],
-      learningOutcomes: learningOutcomes ? JSON.parse(learningOutcomes) : [],
+      prerequisites: parseArray(prerequisites),
+      learningOutcomes: parseArray(learningOutcomes),
       thumbnailUrl,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),

@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Dimensions,
   Alert,
+  TextInput,
 } from "react-native";
 import { themes } from "../../constants/colors";
 import { getSession } from "../../lib/session";
@@ -18,6 +19,8 @@ import { router } from "expo-router";
 export default function CoursesPage() {
   const [user, setUser] = useState(null);
   const [courses, setCourses] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [difficultyFilter, setDifficultyFilter] = useState("all");
   const scheme = useColorScheme();
   const theme = scheme === "dark" ? themes.dark : themes.light;
   const navigation = useNavigation();
@@ -44,6 +47,25 @@ export default function CoursesPage() {
         return '#dc3545';
       default:
         return '#6c757d';
+    }
+  };
+
+  const getCategoryIcon = (category) => {
+    switch ((category || '').toLowerCase()) {
+      case 'programming':
+        return 'code-slash';
+      case 'design':
+        return 'brush';
+      case 'marketing':
+        return 'megaphone';
+      case 'business':
+        return 'business';
+      case 'language':
+        return 'language';
+      case 'technical':
+        return 'settings';
+      default:
+        return 'ribbon';
     }
   };
 
@@ -114,12 +136,12 @@ export default function CoursesPage() {
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
       <ScrollView style={[styles.container, { backgroundColor: theme.background }]}> 
-      <View style={[styles.headerContainer, styles.headerHero]}>
+      <View style={[styles.headerContainer, styles.headerHero, { backgroundColor: theme.primary }]}>
         <View style={styles.shapeOne} />
         <View style={styles.shapeTwo} />
-        <Text style={[styles.headerTitle, { color: '#fff' }]}>Courses</Text>
+        <Text style={[styles.headerTitle, { color: theme.headerText }]}>Courses</Text>
         {user && (
-          <Text style={[styles.headerSubtitle, { color: '#eaf2ff' }]}>Welcome, {user.fullName}</Text>
+          <Text style={[styles.headerSubtitle, { color: theme.headerText }]} >Welcome, {user.fullName}</Text>
         )}
         
         
@@ -128,71 +150,112 @@ export default function CoursesPage() {
           { backgroundColor: 'rgba(255,255,255,0.12)', borderColor: 'rgba(255,255,255,0.2)', borderWidth: 1, borderRadius: 12 }
         ]}>
           <View style={styles.programRow}>
-            <Ionicons name="document-outline" size={28} color="#ffffff" style={{ marginRight: 12 }} />
+            <Ionicons name="document-outline" size={28} color={theme.headerText} style={{ marginRight: 12 }} />
             <View style={{ flex: 1 }}>
-              <Text style={[styles.programLabel, { color: '#eaf2ff' }]}>Total Courses</Text>
-              <Text style={[styles.programValue, { color: '#fff' }]}>{courses.length}</Text>
+              <Text style={[styles.programLabel, { color: theme.headerText }]}>Total Courses</Text>
+              <Text style={[styles.programValue, { color: theme.headerText }]}>{courses.length}</Text>
             </View>
           </View>
         </View>
       </View>
       
 
-      {courses.map((course) => (
+      <View style={[styles.searchContainer, { backgroundColor: theme.card2, borderColor: theme.border }]}> 
+        <Ionicons name="search" size={18} color={theme.textSecondary} style={{ marginRight: 8 }} />
+        <TextInput
+          style={[styles.searchInput, { color: theme.text }]}
+          placeholder="Search courses"
+          placeholderTextColor={theme.textSecondary}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          returnKeyType="search"
+        />
+        {!!searchQuery && (
+          <TouchableOpacity onPress={() => setSearchQuery("")}> 
+            <Ionicons name="close-circle" size={18} color={theme.textSecondary} />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <View style={styles.filterRow}>
+        {['all','beginner','intermediate','advanced'].map((d) => (
+          <TouchableOpacity key={d} onPress={() => setDifficultyFilter(d)} style={[styles.filterChip, { borderColor: theme.border, backgroundColor: difficultyFilter===d ? theme.primary : theme.card2 }]}> 
+            <Text style={{ color: difficultyFilter===d ? theme.headerText : theme.textSecondary, fontWeight: '600' }}>{d.charAt(0).toUpperCase()+d.slice(1)}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {(() => {
+        const q = searchQuery.trim().toLowerCase();
+        const filtered = courses.filter((course) => {
+          const matchesQuery = !q || (
+            (course?.courseName||"").toLowerCase().includes(q) ||
+            (course?.category||"").toLowerCase().includes(q) ||
+            (course?.description||"").toLowerCase().includes(q)
+          );
+          const diff = (course?.difficulty||"").toLowerCase();
+          const matchesDiff = difficultyFilter === 'all' || diff === difficultyFilter;
+          return matchesQuery && matchesDiff;
+        });
+        if (filtered.length === 0) {
+          return <Text style={{ color: theme.textSecondary, paddingHorizontal: 12, paddingVertical: 8 }}>No matching courses</Text>;
+        }
+        return filtered.map((course) => (
         <View
           key={course.id || course._id}
-          style={[styles.courseCard, { width: deviceWidth, backgroundColor: '#fff' }]}
+          style={[styles.courseCard, { width: deviceWidth, backgroundColor: theme.card2 }]}
         >
           <View style={styles.courseHeader}>
             <View style={styles.courseTitleContainer}>
-              <Ionicons name="school-sharp" size={24} color="#007bff" style={{ marginRight: 8 }} />
-              <Text style={styles.courseName}>{course.courseName}</Text>
+              <Ionicons name={getCategoryIcon(course.category)} size={24} color={theme.primary} style={{ marginRight: 8 }} />
+              <Text style={[styles.value, { color: theme.text }]}>{course.courseName}</Text>
             </View>
             {!!course.difficulty && (
-              <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(course.difficulty) }]}>
+              <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(course.difficulty) }]}> 
                 <Text style={styles.difficultyText}>{course.difficulty}</Text>
               </View>
             )}
           </View>
 
           {!!course.category && (
-            <Text style={styles.courseCategory}>Category: {course.category}</Text>
+            <Text style={[styles.courseCategory, { color: theme.textSecondary }]}>Category: {course.category}</Text>
           )}
           {!!course.duration && (
-            <Text style={styles.courseDuration}>Duration: {course.duration}</Text>
+            <Text style={[styles.courseDuration, { color: theme.textSecondary }]}>Duration: {course.duration}</Text>
           )}
           {typeof course.fees !== 'undefined' && (
             <Text style={styles.courseFee}>Fee: ${course.fees}</Text>
           )}
           {course.description ? (
-            <Text style={styles.courseDescription} numberOfLines={2}>{course.description}</Text>
+            <Text style={[styles.courseDescription, { color: theme.textSecondary }]} numberOfLines={2}>{course.description}</Text>
           ) : null}
 
           <View style={styles.courseActions}>
             <TouchableOpacity style={styles.actionBtn} onPress={() => onEditCourse(course)}>
-              <Ionicons name="create-outline" size={20} color="#007bff" />
-              <Text style={styles.actionText}>Edit</Text>
+              <Ionicons name="create-outline" size={20} color={theme.primary} />
+              <Text style={[styles.value, { color: theme.text }]}>Edit</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.actionBtn} onPress={() => onDeleteCourse(course)}>
               <Ionicons name="trash-sharp" size={20} color="#ff4d4f" />
-              <Text style={styles.actionText}>Delete</Text>
+              <Text style={[styles.value, { color: theme.text }]}>Delete</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.readMoreContainer} onPress={() => onReadMore(course)}>
-              <Text style={styles.readMoreText}>Read more</Text>
-              <Ionicons name="arrow-forward-outline" size={18} color="#007bff" style={{ marginLeft: 4 }} />
+              <Text style={[styles.readMoreText, { color: theme.primary }]}>Read more</Text>
+              <Ionicons name="arrow-forward-outline" size={18} color={theme.primary} style={{ marginLeft: 4 }} />
             </TouchableOpacity>
           </View>
         </View>
-      ))}
+        ));
+      })()}
       </ScrollView>
       {/* Floating Action Button */}
       <TouchableOpacity
-        style={styles.fab}
+        style={[styles.fab, { backgroundColor: theme.primary }]}
         onPress={() => router.push("/(institute)/addcourse")}
       >
-        <Ionicons name="add" size={24} color="#fff" />
+        <Ionicons name="add" size={24} color={theme.headerText} />
       </TouchableOpacity>
     </View>
   );
@@ -315,5 +378,9 @@ const styles = StyleSheet.create({
   actionText: { marginLeft: 5, fontWeight: '600', fontSize: 14 },
   readMoreContainer: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
   readMoreText: { color: '#007bff', fontWeight: '700', fontSize: 14 },
+  searchContainer: { flexDirection:'row', alignItems:'center', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 999, borderWidth: 1, marginHorizontal: 12, marginBottom: 20 },
+  searchInput: { flex: 1, fontSize: 14 },
+  filterRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, marginBottom: 12 },
+  filterChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: 1 },
 
 });

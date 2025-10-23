@@ -12,6 +12,7 @@ export const lightColors = {
   textSecondary: '#4b5563',
   border: '#e5e7eb',
   card: '#ffffff',
+  card2: '#f9fafb',
   tint: '#6c63ff',
   headerText: '#ffffff',
   heroFrom: '#667eea',
@@ -47,6 +48,7 @@ export const darkColors = {
   textSecondary: '#9ca3af',
   border: '#1f2937',
   card: '#111827',
+  card2: '#1f2c47',
   tint: '#8b85ff',
   headerText: '#ffffff',
   heroFrom: '#4f46e5',
@@ -74,5 +76,3 @@ export const themes = {
 };
 
 export default themes;
-
-
