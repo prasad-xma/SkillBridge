@@ -21,6 +21,10 @@ app.use('/api/auth', authRoutes);
 const courseRoutes = require('./routes/courseRoutes');
 app.use('/courses', courseRoutes);
 
+// Register skill routes
+const skillRoutes = require('./routes/skillRoutes');
+app.use('/skills', skillRoutes);
+
 
 
 

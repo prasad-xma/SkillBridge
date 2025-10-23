@@ -47,21 +47,21 @@ export default function InstituteLayout() {
       />
 
       <Tabs.Screen
-        name="addcourse"
+        name="courses"
         options={{
-          title: "Add Course",
+          title: "Courses",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="add-circle-sharp" color={color} size={size} />
+            <Ionicons name="book-sharp" color={color} size={size} />
           ),
         }}
       />
 
       <Tabs.Screen
-        name="reports"
+        name="skills"
         options={{
-          title: "Reports",
+          title: "Skills",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="analytics-sharp" color={color} size={size} />
+            <Ionicons name="bulb-sharp" color={color} size={size} />
           ),
         }}
       />
@@ -74,6 +74,69 @@ export default function InstituteLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person-circle-sharp" color={color} size={size} />
           ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="editProfile"
+        options={{
+          href: null,
+          headerShown: false,
+          title: "Edit Profile",
+        }}
+      />
+
+      <Tabs.Screen
+        name="editCourse"
+        options={{
+          href: null,
+          headerShown: true,
+          title: "Edit Course",
+        }}
+      />
+
+      <Tabs.Screen
+        name="addcourse"
+        options={{
+          href: null,
+          headerShown: true,
+          title: "Add Course",
+        }}
+      />
+
+      <Tabs.Screen
+        name="courseDetails"
+        options={{
+          href: null,
+          headerShown: false,
+          title: "Course Details",
+        }}
+      />
+
+      <Tabs.Screen
+        name="addSkill"
+        options={{
+          href: null,
+          headerShown: true,
+          title: "Add Skill",
+        }}
+      />
+
+      <Tabs.Screen
+        name="editSkill"
+        options={{
+          href: null,
+          headerShown: true,
+          title: "Edit Skill",
+        }}
+      />
+
+      <Tabs.Screen
+        name="skillDetails"
+        options={{
+          href: null,
+          headerShown: false,
+          title: "Skill Details",
         }}
       />
     </Tabs>
