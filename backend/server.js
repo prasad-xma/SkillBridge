@@ -31,7 +31,8 @@ app.use('/api/recruiter', recruiterRoutes);
 const recommendRoutes = require('./routes/recommendRoutes');
 app.use('/api', recommendRoutes);
 
-
+const chatRoutes = require('./routes/chatRoutes');
+app.use('/api/chat', chatRoutes);
 
 
 // -------------------- server setup -------------------- //
