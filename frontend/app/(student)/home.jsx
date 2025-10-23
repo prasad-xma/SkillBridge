@@ -15,6 +15,9 @@ export default function StudentHome() {
   const theme = scheme === 'dark' ? themes.dark : themes.light
   const [user, setUser] = useState(null)
   const [preparing, setPreparing] = useState(false)
+  const [skills, setSkills] = useState([])
+  const [qAnswers, setQAnswers] = useState(null)
+  const [skillsLoading, setSkillsLoading] = useState(true)
 
   useEffect(() => {
     (async () => {
@@ -82,6 +85,59 @@ export default function StudentHome() {
       router.push('/(student)/recommendations')
     }
   }
+
+  const normalize = (s) => (s || '').toString().toLowerCase()
+  const scoreSkill = (skill, ans) => {
+    if (!skill || !ans) return 0
+    let score = 0
+    const domain = normalize(ans.domain)
+    const interests = Array.isArray(ans.interests) ? ans.interests.map(normalize) : []
+    const name = normalize(skill.skillName)
+    const desc = normalize(skill.description)
+    const cat = normalize(skill.category)
+    if (domain && cat === domain) score += 3
+    interests.forEach((i) => {
+      if (!i) return
+      if (cat.includes(i)) score += 2
+      if (name.includes(i)) score += 1
+      if (desc.includes(i)) score += 1
+    })
+    return score
+  }
+
+  useEffect(() => {
+    ;(async () => {
+      if (!user) return
+      setSkillsLoading(true)
+      try {
+        const idQuery = user?.uid ? `uid=${encodeURIComponent(user.uid)}` : user?.email ? `email=${encodeURIComponent(user.email)}` : ''
+        const results = await Promise.allSettled([
+          axios.get(`${API_BASE}/skills`),
+          idQuery ? axios.get(`${API_BASE}/api/student/questionnaire?${idQuery}`) : Promise.resolve({ data: null }),
+        ])
+        const [skillsRes, qRes] = results
+        setSkills(skillsRes.status === 'fulfilled' && Array.isArray(skillsRes.value?.data) ? skillsRes.value.data : [])
+        setQAnswers(qRes.status === 'fulfilled' ? (qRes.value?.data?.answers || null) : null)
+      } catch (e) {
+        setSkills([])
+        setQAnswers(null)
+      } finally {
+        setSkillsLoading(false)
+      }
+    })()
+  }, [user])
+
+  const relatedSkills = (() => {
+    if (!Array.isArray(skills) || skills.length === 0) return []
+    if (!qAnswers) return skills.slice(0, 6)
+    const scored = skills
+      .map((s) => ({ s, score: scoreSkill(s, qAnswers) }))
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map((x) => x.s)
+    if (scored.length > 0) return scored.slice(0, 6)
+    return skills.slice(0, 6)
+  })()
 
   return (
     // <SwipeBackWrapper style={{ flex: 1 }}>
@@ -165,6 +221,34 @@ export default function StudentHome() {
           <Text style={styles.ctaButtonText}>Start Quiz</Text>
         </TouchableOpacity>
       </View>
+
+      <View style={styles.relatedWrap}>
+        <View style={styles.relatedHeaderRow}>
+          <View style={[styles.relatedIcon, { backgroundColor: theme.accent + '1A', borderColor: theme.accent + '33' }]}>
+            <Ionicons name="flash-outline" size={16} color={theme.accent} />
+          </View>
+          <Text style={[styles.relatedTitle, { color: theme.text }]}>Related Skills</Text>
+        </View>
+        {skillsLoading ? (
+          <ActivityIndicator />
+        ) : relatedSkills.length === 0 ? (
+          <Text style={[styles.relatedEmpty, { color: theme.textSecondary }]}>No skills to show</Text>
+        ) : (
+          <View style={styles.relatedList}>
+            {relatedSkills.map((sk) => (
+              <View key={sk.id} style={[styles.relatedItem, { backgroundColor: theme.skillCardBg, borderColor: theme.skillCardBorder }]}> 
+                <View style={styles.relatedItemIcon}>
+                  <Ionicons name="flash" size={14} color={theme.tint} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.relatedItemTitle, { color: theme.text }]} numberOfLines={1}>{sk.skillName}</Text>
+                  <Text style={[styles.relatedItemMeta, { color: theme.textSecondary }]} numberOfLines={1}>{sk.category} • {sk.difficulty} • {sk.duration}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
       </ScrollView>
     // </SwipeBackWrapper>
   )
@@ -226,6 +310,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   ctaButtonText: { color: '#fff', fontWeight: '800' },
+  relatedWrap: { marginTop: 18 },
+  relatedHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+  relatedIcon: { width: 28, height: 28, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  relatedTitle: { fontSize: 16, fontWeight: '800' },
+  relatedList: { gap: 10 },
+  relatedItem: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 12, padding: 10 },
+  relatedItemIcon: { width: 26, height: 26, borderRadius: 8, backgroundColor: '#ffffff44', alignItems: 'center', justifyContent: 'center' },
+  relatedItemTitle: { fontSize: 14, fontWeight: '800' },
+  relatedItemMeta: { fontSize: 12, marginTop: 2 },
+  relatedEmpty: { fontSize: 13 },
 })
 
 
