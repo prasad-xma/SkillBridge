@@ -151,9 +151,16 @@ export default function InstituteHome() {
         <View style={styles.shapeOne} />
         <View style={styles.shapeTwo} />
         {/* Header Title */}
-        <Text style={[styles.headerTitle, { color: '#fff' }]}>
-          Institute 
-        </Text>
+        <View style={styles.headerTopRow}>
+          <Text style={[styles.headerTitle, { color: '#fff' }]}>Institute </Text>
+          <TouchableOpacity
+            onPress={() => router.push('/(institute)/chat')}
+            style={styles.chatIconBtn}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="chatbubble-ellipses-outline" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
 
         {/* Welcome User */}
         {user && (
@@ -426,7 +433,21 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     backgroundColor: "#fff",
   },
-
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  chatIconBtn: {
+    padding: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
   cardTitle: {
     fontSize: 18,
     fontWeight: "700",
