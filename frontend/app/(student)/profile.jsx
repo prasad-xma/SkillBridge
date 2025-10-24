@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, useColorScheme, ScrollView, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, useColorScheme, ScrollView, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Image } from 'react-native'
 import axios from 'axios'
 import Constants from 'expo-constants'
 import { API_BASE as ENV_API_BASE } from '@env'
@@ -7,6 +7,10 @@ import { themes } from '../../constants/colors'
 import { getSession, clearSession, saveSession } from '../../lib/session'
 import { router } from 'expo-router'
 import { useToast } from '../components/ToastProvider'
+import * as ImagePicker from 'expo-image-picker'
+import { storage, db } from '../../firebaseConfig'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
 
 const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || 'http://localhost:5000'
 
@@ -21,6 +25,8 @@ export default function StudentProfile() {
   const [institution, setInstitution] = useState('')
   const [course, setCourse] = useState('')
   const [year, setYear] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
+  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     (async () => {
@@ -28,6 +34,17 @@ export default function StudentProfile() {
       setUser(s)
     })()
   }, [])
+
+  useEffect(() => {
+    (async () => {
+      if (!user?.uid) return
+      try {
+        const snap = await getDoc(doc(db, 'usersImg', user.uid))
+        const url = snap.exists() ? (snap.data()?.url || '') : ''
+        if (url) setImageUrl(url)
+      } catch {}
+    })()
+  }, [user?.uid])
 
   const onLogout = async () => {
     await clearSession()
@@ -46,6 +63,46 @@ export default function StudentProfile() {
 
   const cancelEdit = () => {
     setEditing(false)
+  }
+
+  const pickAndUploadImage = async () => {
+    if (!user?.uid) return
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
+      if (perm.status !== 'granted') {
+        showToast({ type: 'error', title: 'Permission required', message: 'Media library permission is needed.' })
+        return
+      }
+      const mediaTypes = ImagePicker.MediaType ? ImagePicker.MediaType.IMAGES ?? ImagePicker.MediaType.Images ?? ['images'] : ['images']
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      })
+      if (result.canceled) return
+      const asset = (result.assets && result.assets[0]) || null
+      const uri = asset?.uri
+      if (!uri) return
+
+      // Optimistically show local preview while uploading
+      setImageUrl(uri)
+      setUploading(true)
+      const response = await fetch(uri)
+      const blob = await response.blob()
+      const ext = (uri.split('.').pop() || 'jpg').split('?')[0]
+      const storageRef = ref(storage, `profilePics/${user.uid}.${ext}`)
+      await uploadBytes(storageRef, blob, { contentType: asset?.mimeType || 'image/jpeg' })
+      const downloadURL = await getDownloadURL(storageRef)
+      await setDoc(doc(db, 'usersImg', user.uid), { url: downloadURL, updatedAt: Date.now() }, { merge: true })
+      setImageUrl(downloadURL)
+      showToast({ type: 'success', title: 'Profile picture updated' })
+    } catch (e) {
+      const msg = e?.message || 'Upload failed'
+      showToast({ type: 'error', title: 'Upload failed', message: msg })
+    } finally {
+      setUploading(false)
+    }
   }
 
   const onSave = async () => {
@@ -137,9 +194,20 @@ export default function StudentProfile() {
       nestedScrollEnabled
     > 
       <View style={[styles.headerCard, { backgroundColor: theme.surface, borderColor: theme.border }]}> 
-        <View style={[styles.avatar, { backgroundColor: theme.tint + '22', borderColor: theme.tint + '44' }]}> 
-          <Text style={[styles.avatarText, { color: theme.tint }]}>{initials}</Text> 
-        </View> 
+        <TouchableOpacity onPress={pickAndUploadImage} activeOpacity={0.85}>
+          <View style={[styles.avatar, { backgroundColor: theme.tint + '22', borderColor: theme.tint + '44' }]}> 
+            {imageUrl ? (
+              <Image source={{ uri: imageUrl }} style={styles.avatarImg} resizeMode="cover" />
+            ) : (
+              <Text style={[styles.avatarText, { color: theme.tint }]}>{initials}</Text>
+            )}
+            {uploading ? (
+              <View style={styles.avatarOverlay}>
+                <ActivityIndicator color="#fff" />
+              </View>
+            ) : null}
+          </View>
+        </TouchableOpacity>
         <View style={{ flex: 1 }}> 
           <Text style={[styles.name, { color: theme.text }]}>{user?.fullName || 'Student'}</Text> 
           <Text style={[styles.email, { color: theme.textSecondary }]}>{user?.email || '—'}</Text> 
@@ -289,6 +357,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  avatarImg: { width: '100%', height: '100%', borderRadius: 32 },
+  avatarOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#00000055', alignItems: 'center', justifyContent: 'center', borderRadius: 32 },
   avatarText: { fontSize: 22, fontWeight: '800' },
   name: { fontSize: 18, fontWeight: '800' },
   email: { fontSize: 13, marginTop: 2 },

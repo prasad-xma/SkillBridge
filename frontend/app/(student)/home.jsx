@@ -141,7 +141,13 @@ export default function StudentHome() {
 
   return (
     // <SwipeBackWrapper style={{ flex: 1 }}>
-      <ScrollView style={{ flex: 1, backgroundColor: theme.background }} contentContainerStyle={styles.container}>
+      <ScrollView
+        style={{ flex: 1, backgroundColor: theme.background }}
+        showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.container}>
         <View style={[styles.hero, { backgroundColor: theme.surface, borderColor: theme.border }]}> 
           <View style={styles.badgeRow}>
             <View style={[styles.badge, { backgroundColor: theme.tint + '22', borderColor: theme.tint + '55' }]}>
@@ -249,13 +255,14 @@ export default function StudentHome() {
           </View>
         )}
       </View>
+      </View>
       </ScrollView>
     // </SwipeBackWrapper>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, paddingTop: 42 },
+  container: { padding: 16, paddingTop: 42, paddingBottom: 40 },
   hero: {
     borderRadius: 16,
     borderWidth: 1,

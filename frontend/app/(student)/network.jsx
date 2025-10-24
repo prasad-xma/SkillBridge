@@ -322,18 +322,44 @@ export default function StudentNetwork() {
       ) : (
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={[styles.chatHeader, { borderColor: theme.border }]}> 
-            <TouchableOpacity onPress={() => { setSelected(null); setMessages([]) }} style={[styles.backBtn, { borderColor: theme.border }]}> 
-              <Ionicons name="chevron-back" size={20} color={theme.text} />
+            <TouchableOpacity
+              onPress={() => {
+                setSelected(null)
+                setMessages([])
+              }}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Go back to conversations"
+              style={[
+                styles.backBtn,
+                {
+                  backgroundColor: theme.surface,
+                  borderColor: theme.border,
+                  shadowColor: theme.toastShadow,
+                },
+              ]}
+            >
+              <Ionicons name="chevron-back" size={20} color={theme.tint} />
             </TouchableOpacity>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.chatTitle, { color: theme.text }]} numberOfLines={1}>
-                {selected.otherUser?.fullName || selected.otherUser?.email || 'Chat'}
-              </Text>
-              {selected.otherUser?.profile?.jobTitle || selected.otherUser?.profile?.company ? (
-                <Text style={{ color: theme.textSecondary, fontSize: 12 }} numberOfLines={1}>
-                  {[selected.otherUser?.profile?.jobTitle, selected.otherUser?.profile?.company].filter(Boolean).join(' • ')}
+            <View style={styles.chatHeaderContent}>
+              <View
+                style={[
+                  styles.profileBadge,
+                  { backgroundColor: theme.tint + '1A', borderColor: theme.tint + '33' },
+                ]}
+              >
+                <Ionicons name="person" size={18} color={theme.tint} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.chatTitle, { color: theme.text }]} numberOfLines={1}>
+                  {selected.otherUser?.fullName || selected.otherUser?.email || 'Chat'}
                 </Text>
-              ) : null}
+                {selected.otherUser?.profile?.jobTitle || selected.otherUser?.profile?.company ? (
+                  <Text style={{ color: theme.textSecondary, fontSize: 12 }} numberOfLines={1}>
+                    {[selected.otherUser?.profile?.jobTitle, selected.otherUser?.profile?.company].filter(Boolean).join(' • ')}
+                  </Text>
+                ) : null}
+              </View>
             </View>
           </View>
           {loadingMessages ? (
@@ -426,10 +452,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  chatHeaderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
   backBtn: {
     borderWidth: 1,
-    borderRadius: 10,
-    padding: 8,
+    borderRadius: 12,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  profileBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   chatTitle: {
     fontSize: 16,
