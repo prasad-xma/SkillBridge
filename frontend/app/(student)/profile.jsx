@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, useColorScheme, ScrollView, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Image } from 'react-native'
 import axios from 'axios'
 import Constants from 'expo-constants'
@@ -8,11 +8,16 @@ import { getSession, clearSession, saveSession } from '../../lib/session'
 import { router } from 'expo-router'
 import { useToast } from '../components/ToastProvider'
 import * as ImagePicker from 'expo-image-picker'
-import { storage, db } from '../../firebaseConfig'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import * as FileSystem from 'expo-file-system'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { v4 as uuidv4 } from 'uuid'
+import { db } from '../../firebaseConfig'
+import { doc, getDoc } from 'firebase/firestore'
 
 const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || 'http://localhost:5000'
+const LOCAL_IMAGE_KEY_PREFIX = 'profile_img_'
+const DOCUMENT_DIR = FileSystem.documentDirectory || FileSystem.cacheDirectory || null
+const LOCAL_IMAGE_DIR = DOCUMENT_DIR ? `${DOCUMENT_DIR}profileImages/` : null
 
 export default function StudentProfile() {
   const scheme = useColorScheme()
@@ -36,15 +41,84 @@ export default function StudentProfile() {
   }, [])
 
   useEffect(() => {
-    (async () => {
-      if (!user?.uid) return
+    if (!user?.uid) return
+    let isMounted = true
+
+    const loadImages = async () => {
+      const key = `${LOCAL_IMAGE_KEY_PREFIX}${user.uid}`
+      try {
+        const storedPath = await AsyncStorage.getItem(key)
+        if (storedPath) {
+          const info = await FileSystem.getInfoAsync(storedPath)
+          if (info.exists) {
+            if (isMounted) setImageUrl(storedPath)
+          } else {
+            await AsyncStorage.removeItem(key)
+          }
+        }
+      } catch {}
+
       try {
         const snap = await getDoc(doc(db, 'usersImg', user.uid))
         const url = snap.exists() ? (snap.data()?.url || '') : ''
-        if (url) setImageUrl(url)
+        if (url && isMounted) {
+          setImageUrl(current => current || url)
+        }
       } catch {}
-    })()
+    }
+
+    loadImages()
+
+    return () => {
+      isMounted = false
+    }
   }, [user?.uid])
+
+  const persistLocalImage = useCallback(
+    async sourceUri => {
+      if (!user?.uid || !sourceUri || !LOCAL_IMAGE_DIR) return null
+
+      const key = `${LOCAL_IMAGE_KEY_PREFIX}${user.uid}`
+
+      try {
+        const dirInfo = await FileSystem.getInfoAsync(LOCAL_IMAGE_DIR)
+        if (!dirInfo.exists) {
+          await FileSystem.makeDirectoryAsync(LOCAL_IMAGE_DIR, { intermediates: true })
+        }
+      } catch (dirErr) {
+        console.warn('Failed to ensure profile image directory', dirErr)
+        return null
+      }
+
+      try {
+        const existingPath = await AsyncStorage.getItem(key)
+        if (existingPath) {
+          const existingInfo = await FileSystem.getInfoAsync(existingPath)
+          if (existingInfo.exists) {
+            await FileSystem.deleteAsync(existingPath, { idempotent: true })
+          } else {
+            await AsyncStorage.removeItem(key)
+          }
+        }
+      } catch (cleanupErr) {
+        console.warn('Failed cleaning previous profile image', cleanupErr)
+      }
+
+      const extension = (sourceUri.split('.').pop() || 'jpg').split('?')[0]
+      const filename = `${user.uid}-${uuidv4()}.${extension}`
+      const destination = `${LOCAL_IMAGE_DIR}${filename}`
+
+      try {
+        await FileSystem.copyAsync({ from: sourceUri, to: destination })
+        await AsyncStorage.setItem(key, destination)
+        return destination
+      } catch (copyErr) {
+        console.warn('Failed to persist profile image locally', copyErr)
+        return null
+      }
+    },
+    [user?.uid]
+  )
 
   const onLogout = async () => {
     await clearSession()
@@ -67,6 +141,8 @@ export default function StudentProfile() {
 
   const pickAndUploadImage = async () => {
     if (!user?.uid) return
+    const previousImage = imageUrl
+
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
       if (perm.status !== 'granted') {
@@ -85,18 +161,30 @@ export default function StudentProfile() {
       const uri = asset?.uri
       if (!uri) return
 
-      // Optimistically show local preview while uploading
-      setImageUrl(uri)
       setUploading(true)
-      const response = await fetch(uri)
-      const blob = await response.blob()
-      const ext = (uri.split('.').pop() || 'jpg').split('?')[0]
-      const storageRef = ref(storage, `profilePics/${user.uid}.${ext}`)
-      await uploadBytes(storageRef, blob, { contentType: asset?.mimeType || 'image/jpeg' })
-      const downloadURL = await getDownloadURL(storageRef)
-      await setDoc(doc(db, 'usersImg', user.uid), { url: downloadURL, updatedAt: Date.now() }, { merge: true })
-      setImageUrl(downloadURL)
-      showToast({ type: 'success', title: 'Profile picture updated' })
+      setImageUrl(uri)
+
+      let localSaved = !LOCAL_IMAGE_DIR
+      let localPath = uri
+      if (LOCAL_IMAGE_DIR) {
+        const persistedPath = await persistLocalImage(uri)
+        if (persistedPath) {
+          localPath = persistedPath
+          localSaved = true
+          setImageUrl(persistedPath)
+        }
+      }
+
+      if (!localSaved) {
+        setImageUrl(previousImage)
+        throw new Error('Failed to save image locally')
+      }
+
+      showToast({
+        type: 'success',
+        title: 'Profile picture saved',
+        message: 'Image stored locally on this device.',
+      })
     } catch (e) {
       const msg = e?.message || 'Upload failed'
       showToast({ type: 'error', title: 'Upload failed', message: msg })
