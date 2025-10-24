@@ -63,14 +63,14 @@ export default function AddCourse() {
       const session = await getSession();
       const token = session?.idToken;
 
-      const response = await fetch("http://192.168.1.4:5000/courses/add", {
+      const response = await fetch("http://172.19.81.244:5000/courses/add", {
         method: "POST",
         headers: {
           Authorization: token ? `Bearer ${token}` : "",
           "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
-      }); 
+      });
 
       const data = await response.json();
 
@@ -145,7 +145,7 @@ export default function AddCourse() {
           onChangeText={setChapterInput}
         />
         <TouchableOpacity style={styles.addBtn} onPress={addChapter}>
-          <Ionicons name="add-circle-sharp" size={40} color="#007bff" />
+          <Text style={styles.addBtnText}>ADD</Text>
         </TouchableOpacity>
       </View>
 
@@ -224,12 +224,17 @@ const styles = StyleSheet.create({
   },
 
   addBtn: {
-    justifyContent: "center",
+    backgroundColor: "#007bff",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
     alignItems: "center",
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#e0f0ff",
+    justifyContent: "center",
+  },
+  addBtnText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
   },
 
   chapterItem: {

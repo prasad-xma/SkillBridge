@@ -2,18 +2,18 @@ import React, { useEffect, useState } from 'react'
 import { Tabs, router } from 'expo-router'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { useColorScheme, View } from 'react-native'
-import { themes } from '../../constants/colors'
 import { getSession } from '../../lib/session'
+import { themes } from '../../constants/colors'
 
-export default function StudentTabsLayout() {
-  const colorScheme = useColorScheme()
-  const theme = colorScheme === 'dark' ? themes.dark : themes.light
+export default function RecruiterTabsLayout() {
+  const scheme = useColorScheme()
+  const theme = scheme === 'dark' ? themes.dark : themes.light
   const [checked, setChecked] = useState(false)
 
   useEffect(() => {
     (async () => {
-      const s = await getSession()
-      if (!s || s.role !== 'student') {
+      const session = await getSession()
+      if (!session || session.role !== 'recruiter') {
         router.replace('/login')
         return
       }
@@ -38,17 +38,8 @@ export default function StudentTabsLayout() {
         name="home"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, focused, size }) => (
+          tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="network"
-        options={{
-          title: 'Network',
-          tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons name={focused ? 'people' : 'people-outline'} size={size} color={color} />
           ),
         }}
       />
@@ -56,36 +47,25 @@ export default function StudentTabsLayout() {
         name="jobs"
         options={{
           title: 'Jobs',
-          tabBarIcon: ({ color, focused, size }) => (
+          tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? 'briefcase' : 'briefcase-outline'} size={size} color={color} />
           ),
         }}
       />
+      {/** Hidden route for posting a job (navigated via router.push), not shown in tab bar */}
       <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="questionnaire"
+        name="post-job"
         options={{
           href: null,
-          headerShown: false,
         }}
       />
+      {/** Hidden route for editing a job */}
       <Tabs.Screen
-        name="recommendations"
+        name="edit-job"
         options={{
           href: null,
-          headerShown: false,
         }}
       />
     </Tabs>
   )
 }
-
-
