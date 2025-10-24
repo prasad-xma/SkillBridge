@@ -114,7 +114,11 @@ export default function CoursesScreen() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: theme.background }} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: theme.background }}
+      contentContainerStyle={[styles.container, { paddingTop: (Constants?.statusBarHeight || 0) + 8 }]}
+      showsVerticalScrollIndicator={false}
+    >
       <Text style={[styles.header, { color: theme.text }]}>Explore Courses & Skills</Text>
 
       <View style={[styles.searchWrap, { backgroundColor: theme.surface, borderColor: theme.border }]}> 
@@ -191,8 +195,10 @@ export default function CoursesScreen() {
 }
 
 const CourseCard = ({ theme, course, expanded, onToggle }) => {
+  const difficulty = (course?.difficulty || '').toString().toLowerCase()
+  const stripeColor = difficulty.includes('beginner') ? theme.accent : difficulty.includes('advanced') ? theme.primary : theme.tint
   return (
-    <TouchableOpacity activeOpacity={0.85} onPress={onToggle} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}> 
+    <TouchableOpacity activeOpacity={0.85} onPress={onToggle} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border, borderLeftWidth: 4, borderLeftColor: stripeColor }]}> 
       <View style={styles.cardLeft}>
         {course.thumbnailUrl ? (
           <Image source={{ uri: course.thumbnailUrl }} style={styles.thumb} />
@@ -205,7 +211,7 @@ const CourseCard = ({ theme, course, expanded, onToggle }) => {
       <View style={styles.cardRight}>
         <View style={styles.cardHeaderRow}>
           <Text style={[styles.cardTitle, { color: theme.text }]} numberOfLines={1}>{course.courseName}</Text>
-          <View style={[styles.badge, { backgroundColor: theme.muted, borderColor: theme.border }]}> 
+          <View style={[styles.badge, { backgroundColor: stripeColor + '1A', borderColor: stripeColor + '33' }]}> 
             <Text style={[styles.badgeText, { color: theme.textSecondary }]} numberOfLines={1}>{course.category}</Text>
           </View>
         </View>
