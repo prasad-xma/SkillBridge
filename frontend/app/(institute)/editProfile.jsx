@@ -142,20 +142,12 @@ export default function EditProfile() {
         </View>
       ) : (
         <>
-          {!!error && (
-            <View style={[styles.errorBox, { backgroundColor: theme.card, borderColor: theme.border }]}>
-              <Ionicons name="warning-outline" size={18} color="#ff4d4f" />
-              <Text style={[styles.errorText, { color: theme.text }]}>{error}</Text>
-              <TouchableOpacity style={styles.retryBtn} onPress={loadProfile}>
-                <Text style={styles.retryText}>Retry</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+         
 
           <TextInput
             style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.card }]}
             placeholder="Institute Name"
-            placeholderTextColor={theme.placeholder}
+            placeholderTextColor={theme.text}
             value={name}
             onChangeText={setName}
           />
@@ -163,7 +155,7 @@ export default function EditProfile() {
           <TextInput
             style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.card }]}
             placeholder="Email"
-            placeholderTextColor={theme.placeholder}
+            placeholderTextColor={theme.text}
             keyboardType="email-address"
             autoCapitalize="none"
             value={email}
@@ -173,7 +165,7 @@ export default function EditProfile() {
           <TextInput
             style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.card }]}
             placeholder="Phone"
-            placeholderTextColor={theme.placeholder}
+            placeholderTextColor={theme.text}
             keyboardType="phone-pad"
             value={phone}
             onChangeText={setPhone}
@@ -182,7 +174,7 @@ export default function EditProfile() {
           <TextInput
             style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.card }]}
             placeholder="Address"
-            placeholderTextColor={theme.placeholder}
+            placeholderTextColor={theme.text}
             value={address}
             onChangeText={setAddress}
           />
@@ -190,7 +182,7 @@ export default function EditProfile() {
           <TextInput
             style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.card }]}
             placeholder="Website"
-            placeholderTextColor={theme.placeholder}
+            placeholderTextColor={theme.text}
             autoCapitalize="none"
             value={website}
             onChangeText={setWebsite}
@@ -199,7 +191,7 @@ export default function EditProfile() {
           <TextInput
             style={[styles.textarea, { color: theme.text, borderColor: theme.border, backgroundColor: theme.card }]}
             placeholder="About / Description"
-            placeholderTextColor={theme.placeholder}
+            placeholderTextColor={theme.text}
             value={description}
             onChangeText={setDescription}
             multiline

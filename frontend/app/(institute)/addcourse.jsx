@@ -132,7 +132,7 @@ export default function AddCourse() {
   );
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
         style={[styles.container, { backgroundColor: theme.background }]}
         contentContainerStyle={{ paddingBottom: 30 }}
@@ -142,17 +142,17 @@ export default function AddCourse() {
       <Text style={[styles.title, { color: theme.text }]}>Add New Course</Text>
 
       <TextInput
-        style={[styles.input, { color: theme.text, borderColor: theme.border }]}
+        style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.card }]}
         placeholder="Course Name"
-        placeholderTextColor={theme.placeholder}
+        placeholderTextColor={theme.text}
         value={courseName}
         onChangeText={setCourseName}
       />
 
       <TextInput
-        style={[styles.textarea, { color: theme.text, borderColor: theme.border }]}
+        style={[styles.textarea, { color: theme.text, borderColor: theme.border, backgroundColor: theme.card }]}
         placeholder="Description"
-        placeholderTextColor={theme.placeholder}
+        placeholderTextColor={theme.text}
         value={description}
         onChangeText={setDescription}
         multiline
@@ -209,17 +209,17 @@ export default function AddCourse() {
       </View>
 
       <TextInput
-        style={[styles.input, { color: theme.text, borderColor: theme.border }]}
+        style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.card }]}
         placeholder="Duration (e.g. 6 weeks, 3 months)"
-        placeholderTextColor={theme.placeholder}
+        placeholderTextColor={theme.text}
         value={duration}
         onChangeText={setDuration}
       />
 
       <TextInput
-        style={[styles.input, { color: theme.text, borderColor: theme.border }]}
+        style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.card }]}
         placeholder="Course Fees"
-        placeholderTextColor={theme.placeholder}
+        placeholderTextColor={theme.text}
         value={fees}
         onChangeText={setFees}
         keyboardType="numeric"
@@ -235,7 +235,7 @@ export default function AddCourse() {
               { flex: 1, color: theme.text, borderColor: theme.border, marginRight: 8 },
             ]}
             placeholder="Add Chapter"
-            placeholderTextColor={theme.placeholder}
+            placeholderTextColor={theme.text}
             value={chapterInput}
             onChangeText={setChapterInput}
           />
@@ -262,7 +262,7 @@ export default function AddCourse() {
               { flex: 1, color: theme.text, borderColor: theme.border, marginRight: 8 },
             ]}
             placeholder="Add Learning Outcome"
-            placeholderTextColor={theme.placeholder}
+            placeholderTextColor={theme.text}
             value={outcomeInput}
             onChangeText={setOutcomeInput}
           />
@@ -300,8 +300,6 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
     fontSize: 16,
-    backgroundColor: "#fff",
-    borderColor: "#ccc",
   },
   textarea: {
     borderWidth: 1,
@@ -312,8 +310,6 @@ const styles = StyleSheet.create({
     minHeight: 120,
     maxHeight: 200,
     textAlignVertical: "top",
-    backgroundColor: "#fff",
-    borderColor: "#ccc",
   },
   sectionContainer: {
     marginBottom: 20,
