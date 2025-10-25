@@ -11,6 +11,9 @@ import {
   Alert,
   TextInput,
   RefreshControl,
+  Modal,
+  Animated,
+  Easing,
 } from 'react-native'
 import axios from 'axios'
 import Constants from 'expo-constants'
@@ -34,6 +37,9 @@ export default function StudentJobs() {
   const [submitting, setSubmitting] = useState(false)
   const [applyForm, setApplyForm] = useState({ resumeUrl: '', coverLetter: '' })
   const [activeTab, setActiveTab] = useState('recommended') // 'recommended' or 'all'
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [modalScale] = useState(new Animated.Value(0))
+  const [modalOpacity] = useState(new Animated.Value(0))
 
   const appliedJobMap = useMemo(() => {
     const map = {}
@@ -44,6 +50,51 @@ export default function StudentJobs() {
   }, [applications])
 
   const getApiBase = () => ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE
+
+  const showSuccessAlert = () => {
+    setShowSuccessModal(true)
+    // Reset animations
+    modalScale.setValue(0)
+    modalOpacity.setValue(0)
+    
+    // Animate in
+    Animated.parallel([
+      Animated.timing(modalScale, {
+        toValue: 1,
+        duration: 300,
+        easing: Easing.out(Easing.back(1.2)),
+        useNativeDriver: true,
+      }),
+      Animated.timing(modalOpacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start()
+
+    // Auto hide after 3 seconds
+    setTimeout(() => {
+      hideSuccessAlert()
+    }, 3000)
+  }
+
+  const hideSuccessAlert = () => {
+    Animated.parallel([
+      Animated.timing(modalScale, {
+        toValue: 0,
+        duration: 200,
+        easing: Easing.in(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(modalOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowSuccessModal(false)
+    })
+  }
 
   const loadJobs = useCallback(async () => {
     try {
@@ -142,7 +193,7 @@ export default function StudentJobs() {
         skills: formatSkills(selectedJob.skills),
       }
       await axios.post(`${API_BASE}/api/student/jobs/${selectedJob.id}/apply`, payload)
-      Alert.alert('Application submitted', 'Your application has been sent to the recruiter.')
+      showSuccessAlert()
       setApplyForm({ resumeUrl: '', coverLetter: '' })
       await Promise.all([loadJobs(), loadApplications(user.uid)])
     } catch (e) {
@@ -218,6 +269,46 @@ export default function StudentJobs() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
+      {/* Success Modal */}
+      <Modal
+        visible={showSuccessModal}
+        transparent
+        animationType="none"
+        statusBarTranslucent
+        onRequestClose={hideSuccessAlert}
+      >
+        <View style={styles.modalOverlay}>
+          <Animated.View 
+            style={[
+              styles.successModal,
+              { 
+                backgroundColor: theme.card,
+                borderColor: theme.border,
+                transform: [{ scale: modalScale }],
+                opacity: modalOpacity,
+              }
+            ]}
+          >
+            <View style={[styles.successIconContainer, { backgroundColor: theme.primary + '20' }]}>
+              <Ionicons name="checkmark-circle" size={48} color={theme.primary} />
+            </View>
+            <Text style={[styles.successTitle, { color: theme.text }]}>
+              Application Submitted!
+            </Text>
+            <Text style={[styles.successMessage, { color: theme.textSecondary }]}>
+              Your application has been sent to the recruiter.
+            </Text>
+            <TouchableOpacity 
+              style={[styles.successButton, { backgroundColor: theme.primary }]}
+              onPress={hideSuccessAlert}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.successButtonText}>Got it</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </Modal>
+
       <View style={[styles.headerBar, { borderColor: theme.border }]}>
         <View style={styles.headerTitleRow}>
           <Ionicons name="briefcase-outline" size={24} color={theme.text} />
@@ -678,5 +769,61 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
     fontSize: 15,
+  },
+  // New styles for success modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  successModal: {
+    width: '100%',
+    maxWidth: 320,
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  successIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  successTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  successMessage: {
+    fontSize: 15,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  successButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    minWidth: 120,
+  },
+  successButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
+    textAlign: 'center',
   },
 })
