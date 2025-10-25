@@ -6,6 +6,8 @@ import Constants from 'expo-constants'
 import { API_BASE as ENV_API_BASE } from '@env'
 import { getSession } from '../../lib/session'
 import { themes } from '../../constants/colors'
+import Ionicons from '@expo/vector-icons/Ionicons'
+import { router } from 'expo-router'
 
 const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || 'http://localhost:5000'
 
@@ -93,7 +95,16 @@ export default function Reminders() {
     >
       <LinearGradient colors={[theme.heroFrom, theme.heroTo]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
         <View style={styles.heroGlow} />
-        <Text style={styles.heroTitle}>Reminders</Text>
+        <View style={styles.headerTopRow}>
+          <Text style={styles.heroTitle}>Reminders</Text>
+          <TouchableOpacity
+            onPress={() => router.push('/(professional)/chat')}
+            style={styles.chatIconBtn}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="chatbubble-ellipses-outline" size={22} color={theme.headerText} />
+          </TouchableOpacity>
+        </View>
         <Text style={styles.heroSub}>Create quick follow-ups</Text>
       </LinearGradient>
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -154,6 +165,8 @@ const createStyles = (theme) =>
     heroGlow: { position: 'absolute', bottom: -110, right: -90, width: 240, height: 240, backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 9999 },
     heroTitle: { fontSize: 26, fontWeight: '700', color: theme.headerText },
     heroSub: { marginTop: 6, fontSize: 14, color: theme.headerText, opacity: 0.88 },
+    headerTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    chatIconBtn: { padding: 8, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.18)' },
     card: { borderWidth: 1, borderColor: theme.border, backgroundColor: theme.card, borderRadius: 22, padding: 20, shadowColor: theme.toastShadow, shadowOpacity: 1, shadowRadius: 12, shadowOffset: { width: 0, height: 8 }, elevation: 3 },
     cardGlass: { backgroundColor: theme.surface },
     cardAccent: { borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface, borderRadius: 22, padding: 20, gap: 12, shadowColor: theme.toastShadow, shadowOpacity: 1, shadowRadius: 10, shadowOffset: { width: 0, height: 6 }, elevation: 2 },

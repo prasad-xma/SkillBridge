@@ -175,6 +175,103 @@ function normalizeSkills(skills) {
     .filter(Boolean)
 }
 
+// Local deterministic fallback when model calls are unavailable
+function localGenerateFromAnswers(answers = {}) {
+  const domain = (answers.domain || answers.fieldOfStudy || 'general').toString().toLowerCase()
+  const interests = Array.isArray(answers.interests) ? answers.interests.map(String) : []
+  const skillsLevels = answers.skillsLevels || {}
+
+  const picks = []
+  const push = (name, why) => {
+    if (name && !picks.find((p) => p.name.toLowerCase() === String(name).toLowerCase())) {
+      picks.push({ name, why })
+    }
+  }
+
+  const addWeb = () => {
+    push('JavaScript', 'Core language for interactive web apps and many frameworks you may use.')
+    push('React', 'A dominant frontend library; mastering it opens many project opportunities.')
+    push('Node.js', 'Lets you build full‑stack apps and APIs using one language end‑to‑end.')
+  }
+  const addMobile = () => {
+    push('React Native', 'Cross‑platform mobile apps align well with your interests.')
+    push('TypeScript', 'Stronger types improve app reliability and developer velocity.')
+    push('Mobile UI Patterns', 'Design patterns will help you craft polished experiences.')
+  }
+  const addData = () => {
+    push('Python', 'Primary language for data work and ML experimentation.')
+    push('Pandas', 'Core library for data wrangling and analysis.')
+    push('SQL', 'Essential for querying and working with real‑world datasets.')
+  }
+  const addAI = () => {
+    push('Machine Learning', 'Foundational concepts to build intelligent systems.')
+    push('TensorFlow', 'Popular framework for training and deploying models.')
+    push('MLOps Basics', 'Helps you move experiments toward production reliably.')
+  }
+  const addCloud = () => {
+    push('AWS Basics', 'Cloud fundamentals enable deployment and scaling of solutions.')
+    push('Docker', 'Containerization is key for reproducible environments.')
+    push('Kubernetes', 'Orchestrates containers for reliable, scalable services.')
+  }
+  const addDesign = () => {
+    push('Figma', 'Industry‑standard tool for fast UI design and collaboration.')
+    push('Wireframing', 'Translating ideas to flows improves product clarity.')
+    push('Prototyping', 'Interactive mockups help validate concepts early.')
+  }
+  const addSecurity = () => {
+    push('OWASP Top 10', 'Practical knowledge to avoid the most common web risks.')
+    push('Network Security', 'Foundations for securing systems and data in transit.')
+    push('Secure Coding', 'Everyday practices that prevent vulnerabilities.')
+  }
+  const addDevOps = () => {
+    push('CI/CD', 'Automated delivery shortens feedback loops and improves quality.')
+    push('Infrastructure as Code', 'Versioning infra makes environments consistent and repeatable.')
+    push('Observability', 'Metrics, logs, and tracing help you find issues fast.')
+  }
+  const addProduct = () => {
+    push('User Stories', 'Structured requirements improve delivery focus.')
+    push('Roadmapping', 'Prioritization and sequencing skills for impact.')
+    push('Analytics', 'Measuring outcomes guides better product decisions.')
+  }
+  const addMarketing = () => {
+    push('SEO', 'Improves organic discoverability of content and products.')
+    push('Content Strategy', 'Clear messaging that resonates with the audience.')
+    push('Google Analytics', 'Data‑driven insights to refine campaigns.')
+  }
+
+  const lowers = interests.map((s) => s.toLowerCase())
+  if (domain.includes('web')) addWeb()
+  if (domain.includes('mobile')) addMobile()
+  if (domain.includes('data') || domain.includes('science')) addData()
+  if (domain.includes('ai') || domain.includes('ml')) addAI()
+  if (domain.includes('cloud')) addCloud()
+  if (domain.includes('design') || lowers.some((k) => /ui|ux|design/.test(k))) addDesign()
+  if (domain.includes('security') || lowers.some((k) => /security|owasp|pentest/.test(k))) addSecurity()
+  if (lowers.some((k) => /devops/.test(k))) addDevOps()
+  if (lowers.some((k) => /product/.test(k))) addProduct()
+  if (lowers.some((k) => /marketing/.test(k))) addMarketing()
+
+  // Balance based on weaker common skills if provided
+  const weakCommons = Object.entries(skillsLevels)
+    .filter(([, v]) => typeof v === 'number' && v <= 4)
+    .map(([k]) => k)
+  weakCommons.forEach((k) => push(k, `Strengthening ${k} will accelerate your next milestones.`))
+
+  // Ensure 3–5 items
+  const skills = picks.slice(0, 5)
+  while (skills.length < 3) {
+    push('Problem Solving', 'A universal multiplier for engineering and product work.')
+    if (skills.length >= 3) break
+    push('Time Management', 'Plan and protect focus time to execute consistently.')
+  }
+
+  const name = answers.fullName || answers.displayName || 'you'
+  const goal = answers.openAnswer || answers.careerGoal || 'your goals'
+  const advice = `Focus on one skill at a time and practice weekly. Tie learning to small projects relevant to ${goal}. Keep momentum—${name}, your consistent effort will compound quickly.`
+
+  return { skills, advice }
+}
+
 function deriveRelatedTags(answers) {
   const tags = new Set()
   const interests = Array.isArray(answers?.interests) ? answers.interests : []
@@ -217,17 +314,19 @@ function serializeRecommendations(rec, questionnaireUpdatedAt) {
 }
 
 async function generateAndStore(docRef, answers, questionnaireUpdatedAt, opts = {}) {
-  const prompt = buildPrompt(answers)
-  const raw = await callGemini(prompt)
-  const parsed = parseModelResponse(raw)
-  const skills = normalizeSkills(parsed && parsed.skills)
-  const advice = parsed && typeof parsed.advice === 'string' ? parsed.advice.trim() : ''
-
-  if (!skills.length) {
-    throw new Error('Gemini response missing skills array')
-  }
-  if (!advice) {
-    throw new Error('Gemini response missing advice')
+  let skills = []
+  let advice = ''
+  try {
+    const prompt = buildPrompt(answers)
+    const raw = await callGemini(prompt)
+    const parsed = parseModelResponse(raw)
+    skills = normalizeSkills(parsed && parsed.skills)
+    advice = parsed && typeof parsed.advice === 'string' ? parsed.advice.trim() : ''
+    if (!skills.length || !advice) throw new Error('Model response incomplete')
+  } catch (_) {
+    const local = localGenerateFromAnswers(answers)
+    skills = normalizeSkills(local.skills)
+    advice = typeof local.advice === 'string' ? local.advice : ''
   }
 
   const payload = {
