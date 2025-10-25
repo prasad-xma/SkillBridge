@@ -35,21 +35,10 @@ export default function ProfessionalLayout() {
         tabBarInactiveTintColor: theme.textSecondary,
         tabBarShowLabel: false,
         tabBarStyle: {
-          position: 'absolute',
-          left: 16,
-          right: 16,
-          bottom: 12,
-          height: 60,
+          height: 56,
           backgroundColor: theme.card,
-          borderTopColor: 'transparent',
-          borderRadius: 16,
-          paddingHorizontal: 8,
-          paddingTop: 6,
-          shadowColor: '#000',
-          shadowOpacity: 0.08,
-          shadowRadius: 12,
-          shadowOffset: { width: 0, height: 6 },
-          elevation: 6,
+          borderTopColor: theme.border,
+          shadowColor: 'transparent',
         },
         tabBarItemStyle: { paddingVertical: 6 },
         headerStyle: { backgroundColor: theme.card },
@@ -126,9 +115,8 @@ export default function ProfessionalLayout() {
 function IconLabel({ emoji, label, color, focused }) {
   return (
     <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ fontSize: 18, lineHeight: 18 }}>{emoji}</Text>
-      <Text style={{ fontSize: 10, color }}>{label}</Text>
-      {focused ? <View style={{ width: 16, height: 3, backgroundColor: color, borderRadius: 9999, marginTop: 4 }} /> : null}
+      <Text style={{ fontSize: 20, lineHeight: 20 }}>{emoji}</Text>
+      {focused ? <View style={{ width: 16, height: 3, backgroundColor: color, borderRadius: 9999, marginTop: 6 }} /> : null}
     </View>
   )
 }
