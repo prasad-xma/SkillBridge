@@ -80,6 +80,28 @@ Output format:
 `
 }
 
+function buildTagsPrompt(answers, skills = []) {
+  const domain = answers.domain || answers.fieldOfStudy || 'General'
+  const interests = Array.isArray(answers.interests) ? answers.interests.join(', ') : (answers.interests || 'General')
+  const skillHints = Array.isArray(skills) ? skills.map(s => (s && (s.name || s.skill || s.title))).filter(Boolean).join(', ') : ''
+  return `You are an expert career mentor.
+
+Task: Produce a concise list of concrete skill tags (technologies, tools, frameworks, or short competency phrases) tailored to the student's domain and interests. Focus on nouns like HTML, CSS, JavaScript, React, Python, MongoDB, etc. Avoid sentences.
+
+Student context:
+- Domain: ${domain}
+- Interests: ${interests}
+- Recommended skills (hints): ${skillHints}
+
+Output format (JSON only, no prose):
+{
+  "tags": ["tag1", "tag2", "tag3", "..."]
+}
+- 6 to 14 items
+- No duplicates
+- Each item must be 2-20 characters
+`}
+
 async function callGemini(prompt) {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) {
@@ -112,6 +134,31 @@ function parseModelResponse(text) {
   }
 }
 
+function parseTagsResponse(text) {
+  if (!text) return []
+  let cleaned = text.trim()
+  cleaned = cleaned.replace(/```json|```/gi, '').trim()
+  const first = cleaned.indexOf('{')
+  const last = cleaned.lastIndexOf('}')
+  const arrFirst = cleaned.indexOf('[')
+  const arrLast = cleaned.lastIndexOf(']')
+  try {
+    if (arrFirst >= 0 && arrLast >= arrFirst) {
+      const js = JSON.parse(cleaned.slice(arrFirst, arrLast + 1))
+      return Array.isArray(js) ? js : []
+    }
+    if (first >= 0 && last >= first) {
+      const obj = JSON.parse(cleaned.slice(first, last + 1))
+      const t = obj && obj.tags
+      return Array.isArray(t) ? t : []
+    }
+    const fallback = JSON.parse(cleaned)
+    return Array.isArray(fallback) ? fallback : (Array.isArray(fallback?.tags) ? fallback.tags : [])
+  } catch (_) {
+    return []
+  }
+}
+
 function normalizeSkills(skills) {
   if (!Array.isArray(skills)) return []
   return skills
@@ -128,6 +175,27 @@ function normalizeSkills(skills) {
     .filter(Boolean)
 }
 
+function deriveRelatedTags(answers) {
+  const tags = new Set()
+  const interests = Array.isArray(answers?.interests) ? answers.interests : []
+  const add = (arr) => arr.forEach(t => tags.add(t))
+  interests.forEach((it) => {
+    const k = String(it || '').toLowerCase()
+    if (k.includes('web')) add(['HTML', 'CSS', 'JavaScript', 'React', 'Tailwind CSS', 'Node.js'])
+    else if (k.includes('mobile')) add(['React Native', 'Flutter', 'Swift', 'Kotlin'])
+    else if (k.includes('data')) add(['Python', 'Pandas', 'NumPy', 'SQL', 'scikit-learn'])
+    else if (k.includes('ai') || k.includes('ml')) add(['Python', 'TensorFlow', 'PyTorch', 'ML'])
+    else if (k.includes('cloud')) add(['AWS', 'Docker', 'Kubernetes'])
+    else if (k.includes('ui') || k.includes('ux') || k.includes('design')) add(['Figma', 'Wireframing', 'Prototyping'])
+    else if (k.includes('security')) add(['Network Security', 'OWASP', 'Pentesting'])
+    else if (k.includes('devops')) add(['Docker', 'Kubernetes', 'Terraform', 'CI/CD'])
+    else if (k.includes('product')) add(['User Stories', 'Roadmapping', 'Analytics'])
+    else if (k.includes('marketing')) add(['SEO', 'Content Marketing', 'GA4'])
+    else if (k.includes('finance')) add(['Excel', 'Accounting', 'Modeling'])
+  })
+  return Array.from(tags).slice(0, 16)
+}
+
 function serializeRecommendations(rec, questionnaireUpdatedAt) {
   if (!rec) return null
   const questionnaireIso = toIso(questionnaireUpdatedAt)
@@ -137,6 +205,7 @@ function serializeRecommendations(rec, questionnaireUpdatedAt) {
   return {
     skills: normalizeSkills(rec.skills),
     advice: typeof rec.advice === 'string' ? rec.advice : '',
+    skillTags: Array.isArray(rec.skillTags) ? rec.skillTags : [],
     model: rec.model || MODEL_ID,
     provider: rec.provider || PROVIDER,
     promptVersion: rec.promptVersion || PROMPT_VERSION,
@@ -147,7 +216,7 @@ function serializeRecommendations(rec, questionnaireUpdatedAt) {
   }
 }
 
-async function generateAndStore(docRef, answers, questionnaireUpdatedAt) {
+async function generateAndStore(docRef, answers, questionnaireUpdatedAt, opts = {}) {
   const prompt = buildPrompt(answers)
   const raw = await callGemini(prompt)
   const parsed = parseModelResponse(raw)
@@ -169,6 +238,23 @@ async function generateAndStore(docRef, answers, questionnaireUpdatedAt) {
     promptVersion: PROMPT_VERSION,
     questionnaireUpdatedAt: questionnaireUpdatedAt || null,
     generatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  }
+
+  // Optionally generate concise tags for a chips row
+  if (opts && opts.includeTags) {
+    try {
+      const tagsPrompt = buildTagsPrompt(answers, skills)
+      const tagsText = await callGemini(tagsPrompt)
+      const tagsParsed = parseTagsResponse(tagsText)
+      const cleaned = Array.from(new Set(
+        (Array.isArray(tagsParsed) ? tagsParsed : [])
+          .map((t) => (typeof t === 'string' ? t.trim() : ''))
+          .filter((t) => t && t.length >= 2 && t.length <= 40)
+      ))
+      payload.skillTags = cleaned.length ? cleaned.slice(0, 16) : deriveRelatedTags(answers)
+    } catch (_) {
+      payload.skillTags = deriveRelatedTags(answers)
+    }
   }
 
   await docRef.set({ recommendations: payload }, { merge: true })
@@ -205,14 +291,35 @@ async function recommendSkills(req, res) {
     const questionnaireUpdatedAt = data.updatedAt || null
     const existing = data.recommendations
     const force = Boolean(req.body && req.body.force)
+    const includeTags = Boolean(req.body && req.body.includeTags)
 
     if (existing && questionnaireUpdatedAt && !force) {
       if (timestampsEqual(existing.questionnaireUpdatedAt, questionnaireUpdatedAt)) {
+        if (includeTags && (!Array.isArray(existing.skillTags) || existing.skillTags.length === 0)) {
+          // Compute tags and persist into existing record
+          try {
+            const tagsPrompt = buildTagsPrompt(answers, existing.skills)
+            const tagsText = await callGemini(tagsPrompt)
+            const tagsParsed = parseTagsResponse(tagsText)
+            const cleaned = Array.from(new Set(
+              (Array.isArray(tagsParsed) ? tagsParsed : [])
+                .map((t) => (typeof t === 'string' ? t.trim() : ''))
+                .filter((t) => t && t.length >= 2 && t.length <= 40)
+            ))
+            const finalTags = cleaned.length ? cleaned.slice(0, 16) : deriveRelatedTags(answers)
+            await docRef.set({ recommendations: { ...existing, skillTags: finalTags } }, { merge: true })
+            return res.status(200).json(serializeRecommendations({ ...existing, skillTags: finalTags }, questionnaireUpdatedAt))
+          } catch (_) {
+            const finalTags = deriveRelatedTags(answers)
+            await docRef.set({ recommendations: { ...existing, skillTags: finalTags } }, { merge: true })
+            return res.status(200).json(serializeRecommendations({ ...existing, skillTags: finalTags }, questionnaireUpdatedAt))
+          }
+        }
         return res.status(200).json(serializeRecommendations(existing, questionnaireUpdatedAt))
       }
     }
 
-    const recommendations = await generateAndStore(docRef, answers, questionnaireUpdatedAt)
+    const recommendations = await generateAndStore(docRef, answers, questionnaireUpdatedAt, { includeTags })
     return res.status(200).json(recommendations)
   } catch (error) {
     return res.status(500).json({ message: 'Failed to generate recommendations', error: error.message })
@@ -236,6 +343,28 @@ async function getRecommendations(req, res) {
     const rec = data.recommendations
     if (!rec) {
       return res.status(404).json({ message: 'No recommendations' })
+    }
+
+    const includeTags = (req.query?.includeTags === '1' || req.query?.includeTags === 'true')
+    if (includeTags && (!Array.isArray(rec.skillTags) || rec.skillTags.length === 0)) {
+      const answers = data.answers || {}
+      try {
+        const tagsPrompt = buildTagsPrompt(answers, rec.skills)
+        const tagsText = await callGemini(tagsPrompt)
+        const tagsParsed = parseTagsResponse(tagsText)
+        const cleaned = Array.from(new Set(
+          (Array.isArray(tagsParsed) ? tagsParsed : [])
+            .map((t) => (typeof t === 'string' ? t.trim() : ''))
+            .filter((t) => t && t.length >= 2 && t.length <= 40)
+        ))
+        const finalTags = cleaned.length ? cleaned.slice(0, 16) : deriveRelatedTags(answers)
+        await docRef.set({ recommendations: { ...rec, skillTags: finalTags } }, { merge: true })
+        return res.status(200).json(serializeRecommendations({ ...rec, skillTags: finalTags }, data.updatedAt))
+      } catch (_) {
+        const fallbackTags = deriveRelatedTags(answers)
+        await docRef.set({ recommendations: { ...rec, skillTags: fallbackTags } }, { merge: true })
+        return res.status(200).json(serializeRecommendations({ ...rec, skillTags: fallbackTags }, data.updatedAt))
+      }
     }
 
     return res.status(200).json(serializeRecommendations(rec, data.updatedAt))

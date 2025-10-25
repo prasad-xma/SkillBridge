@@ -1,13 +1,37 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, useColorScheme } from 'react-native'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { View, Text, StyleSheet, TouchableOpacity, useColorScheme, ScrollView, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Image } from 'react-native'
+import axios from 'axios'
+import Constants from 'expo-constants'
+import { API_BASE as ENV_API_BASE } from '@env'
 import { themes } from '../../constants/colors'
-import { getSession, clearSession } from '../../lib/session'
+import { getSession, clearSession, saveSession } from '../../lib/session'
 import { router } from 'expo-router'
+import { useToast } from '../components/ToastProvider'
+import * as ImagePicker from 'expo-image-picker'
+import * as FileSystem from 'expo-file-system'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { v4 as uuidv4 } from 'uuid'
+import { db } from '../../firebaseConfig'
+import { doc, getDoc } from 'firebase/firestore'
+
+const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || 'http://localhost:5000'
+const LOCAL_IMAGE_KEY_PREFIX = 'profile_img_'
+const DOCUMENT_DIR = FileSystem.documentDirectory || FileSystem.cacheDirectory || null
+const LOCAL_IMAGE_DIR = DOCUMENT_DIR ? `${DOCUMENT_DIR}profileImages/` : null
 
 export default function StudentProfile() {
   const scheme = useColorScheme()
   const theme = scheme === 'dark' ? themes.dark : themes.light
   const [user, setUser] = useState(null)
+  const { showToast } = useToast()
+  const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [fullNameField, setFullNameField] = useState('')
+  const [institution, setInstitution] = useState('')
+  const [course, setCourse] = useState('')
+  const [year, setYear] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
+  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     (async () => {
@@ -16,9 +40,209 @@ export default function StudentProfile() {
     })()
   }, [])
 
+  useEffect(() => {
+    if (!user?.uid) return
+    let isMounted = true
+
+    const loadImages = async () => {
+      const key = `${LOCAL_IMAGE_KEY_PREFIX}${user.uid}`
+      try {
+        const storedPath = await AsyncStorage.getItem(key)
+        if (storedPath) {
+          const info = await FileSystem.getInfoAsync(storedPath)
+          if (info.exists) {
+            if (isMounted) setImageUrl(storedPath)
+          } else {
+            await AsyncStorage.removeItem(key)
+          }
+        }
+      } catch {}
+
+      try {
+        const snap = await getDoc(doc(db, 'usersImg', user.uid))
+        const url = snap.exists() ? (snap.data()?.url || '') : ''
+        if (url && isMounted) {
+          setImageUrl(current => current || url)
+        }
+      } catch {}
+    }
+
+    loadImages()
+
+    return () => {
+      isMounted = false
+    }
+  }, [user?.uid])
+
+  const persistLocalImage = useCallback(
+    async sourceUri => {
+      if (!user?.uid || !sourceUri || !LOCAL_IMAGE_DIR) return null
+
+      const key = `${LOCAL_IMAGE_KEY_PREFIX}${user.uid}`
+
+      try {
+        const dirInfo = await FileSystem.getInfoAsync(LOCAL_IMAGE_DIR)
+        if (!dirInfo.exists) {
+          await FileSystem.makeDirectoryAsync(LOCAL_IMAGE_DIR, { intermediates: true })
+        }
+      } catch (dirErr) {
+        console.warn('Failed to ensure profile image directory', dirErr)
+        return null
+      }
+
+      try {
+        const existingPath = await AsyncStorage.getItem(key)
+        if (existingPath) {
+          const existingInfo = await FileSystem.getInfoAsync(existingPath)
+          if (existingInfo.exists) {
+            await FileSystem.deleteAsync(existingPath, { idempotent: true })
+          } else {
+            await AsyncStorage.removeItem(key)
+          }
+        }
+      } catch (cleanupErr) {
+        console.warn('Failed cleaning previous profile image', cleanupErr)
+      }
+
+      const extension = (sourceUri.split('.').pop() || 'jpg').split('?')[0]
+      const filename = `${user.uid}-${uuidv4()}.${extension}`
+      const destination = `${LOCAL_IMAGE_DIR}${filename}`
+
+      try {
+        await FileSystem.copyAsync({ from: sourceUri, to: destination })
+        await AsyncStorage.setItem(key, destination)
+        return destination
+      } catch (copyErr) {
+        console.warn('Failed to persist profile image locally', copyErr)
+        return null
+      }
+    },
+    [user?.uid]
+  )
+
   const onLogout = async () => {
     await clearSession()
     router.replace('/login')
+  }
+
+  const startEdit = () => {
+    if (!user) return
+    setFullNameField(user?.fullName || '')
+    const p = user?.profile || {}
+    setInstitution(String(p?.institution || ''))
+    setCourse(String(p?.course || ''))
+    setYear(String(p?.year || ''))
+    setEditing(true)
+  }
+
+  const cancelEdit = () => {
+    setEditing(false)
+  }
+
+  const pickAndUploadImage = async () => {
+    if (!user?.uid) return
+    const previousImage = imageUrl
+
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
+      if (perm.status !== 'granted') {
+        showToast({ type: 'error', title: 'Permission required', message: 'Media library permission is needed.' })
+        return
+      }
+      const mediaTypes = ImagePicker.MediaType ? ImagePicker.MediaType.IMAGES ?? ImagePicker.MediaType.Images ?? ['images'] : ['images']
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      })
+      if (result.canceled) return
+      const asset = (result.assets && result.assets[0]) || null
+      const uri = asset?.uri
+      if (!uri) return
+
+      setUploading(true)
+      setImageUrl(uri)
+
+      let localSaved = !LOCAL_IMAGE_DIR
+      let localPath = uri
+      if (LOCAL_IMAGE_DIR) {
+        const persistedPath = await persistLocalImage(uri)
+        if (persistedPath) {
+          localPath = persistedPath
+          localSaved = true
+          setImageUrl(persistedPath)
+        }
+      }
+
+      if (!localSaved) {
+        setImageUrl(previousImage)
+        throw new Error('Failed to save image locally')
+      }
+
+      showToast({
+        type: 'success',
+        title: 'Profile picture saved',
+        message: 'Image stored locally on this device.',
+      })
+    } catch (e) {
+      const msg = e?.message || 'Upload failed'
+      showToast({ type: 'error', title: 'Upload failed', message: msg })
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const onSave = async () => {
+    if (!user?.uid) {
+      showToast({ type: 'error', title: 'Update failed', message: 'Missing user id' })
+      return
+    }
+
+    const trimmedName = (fullNameField || '').trim()
+    const currentProfile = user?.profile || {}
+    const nextProfile = {
+      ...currentProfile,
+      institution,
+      course,
+      year,
+    }
+
+    const profileChanged =
+      (nextProfile.institution || '') !== (currentProfile.institution || '') ||
+      (nextProfile.course || '') !== (currentProfile.course || '') ||
+      (nextProfile.year || '') !== (currentProfile.year || '')
+
+    const body = { uid: user.uid }
+    if (trimmedName && trimmedName !== (user.fullName || '')) body.fullName = trimmedName
+    if (profileChanged) body.profile = nextProfile
+
+    if (!body.fullName && !body.profile) {
+      showToast({ type: 'info', title: 'No changes', message: 'Nothing to update.' })
+      setEditing(false)
+      return
+    }
+
+    setSaving(true)
+    try {
+      const res = await axios.put(`${API_BASE}/api/student/profile`, body)
+      let updatedUser = { ...user }
+      if (res.status === 200 && res.data?.user) {
+        const u = res.data.user
+        updatedUser = { ...updatedUser, fullName: u.fullName ?? updatedUser.fullName, profile: u.profile ?? nextProfile }
+      } else {
+        updatedUser = { ...updatedUser, fullName: trimmedName || updatedUser.fullName, profile: nextProfile }
+      }
+      setUser(updatedUser)
+      await saveSession(updatedUser)
+      showToast({ type: 'success', title: 'Profile updated' })
+      setEditing(false)
+    } catch (e) {
+      const msg = e?.response?.data?.message || e.message
+      showToast({ type: 'error', title: 'Update failed', message: msg })
+    } finally {
+      setSaving(false)
+    }
   }
 
   const initials = useMemo(() => {
@@ -44,11 +268,34 @@ export default function StudentProfile() {
   const profile = user?.profile || {}
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}> 
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: theme.background }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
+    >
+    <ScrollView
+      style={{ flex: 1, backgroundColor: theme.background }}
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+      keyboardDismissMode="on-drag"
+      nestedScrollEnabled
+    > 
       <View style={[styles.headerCard, { backgroundColor: theme.surface, borderColor: theme.border }]}> 
-        <View style={[styles.avatar, { backgroundColor: theme.tint + '22', borderColor: theme.tint + '44' }]}> 
-          <Text style={[styles.avatarText, { color: theme.tint }]}>{initials}</Text> 
-        </View> 
+        <TouchableOpacity onPress={pickAndUploadImage} activeOpacity={0.85}>
+          <View style={[styles.avatar, { backgroundColor: theme.tint + '22', borderColor: theme.tint + '44' }]}> 
+            {imageUrl ? (
+              <Image source={{ uri: imageUrl }} style={styles.avatarImg} resizeMode="cover" />
+            ) : (
+              <Text style={[styles.avatarText, { color: theme.tint }]}>{initials}</Text>
+            )}
+            {uploading ? (
+              <View style={styles.avatarOverlay}>
+                <ActivityIndicator color="#fff" />
+              </View>
+            ) : null}
+          </View>
+        </TouchableOpacity>
         <View style={{ flex: 1 }}> 
           <Text style={[styles.name, { color: theme.text }]}>{user?.fullName || 'Student'}</Text> 
           <Text style={[styles.email, { color: theme.textSecondary }]}>{user?.email || '—'}</Text> 
@@ -98,15 +345,76 @@ export default function StudentProfile() {
         ) : null} 
       </View> 
 
-      <TouchableOpacity style={[styles.button, { backgroundColor: theme.primary }]} onPress={onLogout}> 
+      {!editing ? (
+        <TouchableOpacity style={[styles.button, { backgroundColor: theme.secondary }]} onPress={startEdit}> 
+          <Text style={{ color: '#fff', fontWeight: '700' }}>Edit Profile</Text> 
+        </TouchableOpacity> 
+      ) : (
+        <View style={[styles.detailsCard, { backgroundColor: theme.card, borderColor: theme.border, marginTop: 16 }]}> 
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Edit Profile</Text> 
+          <View style={styles.divider} />
+
+          <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Full Name</Text>
+          <TextInput
+            style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surface }]}
+            placeholder="Full Name"
+            placeholderTextColor={theme.textSecondary}
+            value={fullNameField}
+            onChangeText={setFullNameField}
+          />
+
+          <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Institution</Text>
+          <TextInput
+            style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surface }]}
+            placeholder="Institution"
+            placeholderTextColor={theme.textSecondary}
+            value={institution}
+            onChangeText={setInstitution}
+          />
+
+          <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Course</Text>
+          <TextInput
+            style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surface }]}
+            placeholder="Course"
+            placeholderTextColor={theme.textSecondary}
+            value={course}
+            onChangeText={setCourse}
+          />
+
+          <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Year</Text>
+          <TextInput
+            style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surface }]}
+            placeholder="Year"
+            placeholderTextColor={theme.textSecondary}
+            value={year}
+            onChangeText={setYear}
+          />
+
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+            <TouchableOpacity style={[styles.button, { backgroundColor: theme.primary, flex: 1, opacity: saving ? 0.7 : 1 }]} onPress={onSave} disabled={saving}>
+              {saving ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={{ color: '#fff', fontWeight: '700' }}>Save</Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.button, { backgroundColor: theme.border, flex: 1 }]} onPress={cancelEdit} disabled={saving}>
+              <Text style={{ color: theme.text, fontWeight: '700' }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      <TouchableOpacity style={[styles.button, { backgroundColor: theme.primary, marginTop: 12 }]} onPress={onLogout}> 
         <Text style={{ color: '#fff', fontWeight: '700' }}>Logout</Text> 
       </TouchableOpacity> 
-    </View> 
+    </ScrollView>
+    </KeyboardAvoidingView> 
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, paddingTop: 42 },
+  container: { padding: 16, paddingTop: 42, paddingBottom: 40 },
   headerCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -137,6 +445,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  avatarImg: { width: '100%', height: '100%', borderRadius: 32 },
+  avatarOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#00000055', alignItems: 'center', justifyContent: 'center', borderRadius: 32 },
   avatarText: { fontSize: 22, fontWeight: '800' },
   name: { fontSize: 18, fontWeight: '800' },
   email: { fontSize: 13, marginTop: 2 },
@@ -157,6 +467,7 @@ const styles = StyleSheet.create({
   fieldValue: { fontSize: 13, fontWeight: '700' },
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, maxWidth: '60%', justifyContent: 'flex-end' },
   chip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 1 },
+  input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, marginTop: 6, marginBottom: 10 },
 
   button: { marginTop: 24, paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
 })
