@@ -1,15 +1,21 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, useColorScheme } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, useColorScheme, ActivityIndicator, Linking, ScrollView } from 'react-native'
 import { themes } from '../../constants/colors'
 import { getSession, clearSession } from '../../lib/session'
 import { router } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/native'
+import axios from 'axios'
+import Constants from 'expo-constants'
+import { API_BASE as ENV_API_BASE } from '@env'
 
 export default function RecruiterProfile() {
   const scheme = useColorScheme()
   const theme = scheme === 'dark' ? themes.dark : themes.light
   const [user, setUser] = useState(null)
   const [profileData, setProfileData] = useState(null)
+  const [company, setCompany] = useState(null)
+  const [insights, setInsights] = useState(null)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     (async () => {
@@ -20,6 +26,8 @@ export default function RecruiterProfile() {
       }
       setUser(session)
       setProfileData(null)
+      setCompany(null)
+      setInsights(null)
     })()
   }, [])
 
@@ -30,6 +38,23 @@ export default function RecruiterProfile() {
         if (!session) return
         setUser(session)
         setProfileData(null)
+        setCompany(null)
+        setInsights(null)
+        try {
+          const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE
+          if (!API_BASE) return
+          setLoading(true)
+          const uid = session.uid
+          const [c, i] = await Promise.all([
+            axios.get(`${API_BASE}/api/recruiter/recruiter/${uid}/company`).catch(() => ({ data: null })),
+            axios.get(`${API_BASE}/api/recruiter/recruiter/${uid}/company/insights`).catch(() => ({ data: null })),
+          ])
+          setCompany(c?.data || null)
+          setInsights(i?.data || null)
+        } catch (_) {
+        } finally {
+          setLoading(false)
+        }
       })()
       return () => {}
     }, [])
@@ -64,7 +89,7 @@ export default function RecruiterProfile() {
   const fullName = user?.fullName
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <ScrollView style={{ flex: 1, backgroundColor: theme.background }} contentContainerStyle={styles.container}>
       <View style={[styles.headerCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
         <View style={[styles.avatar, { backgroundColor: theme.tint + '22', borderColor: theme.tint + '44' }]}>
           <Text style={[styles.avatarText, { color: theme.tint }]}>{initials}</Text>
@@ -119,6 +144,102 @@ export default function RecruiterProfile() {
         ) : null}
       </View>
 
+      <View style={[styles.detailsCard, { backgroundColor: theme.card, borderColor: theme.border, marginTop: 16 }]}>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>Company</Text>
+        <View style={styles.divider} />
+        {loading && (
+          <View style={{ paddingVertical: 10 }}>
+            <ActivityIndicator color={theme.primary} />
+          </View>
+        )}
+        {!loading && !company && (
+          <Text style={{ color: theme.textSecondary }}>No company profile yet</Text>
+        )}
+        {!!company && (
+          <>
+            {renderField('Name', company?.name)}
+            {!!company?.website && (
+              <View style={styles.row}>
+                <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Website</Text>
+                <Text style={[styles.fieldValue, { color: '#3b82f6' }]} onPress={() => Linking.openURL(company?.website)} numberOfLines={1}>
+                  {company?.website}
+                </Text>
+              </View>
+            )}
+            {renderField('Industry', company?.industry)}
+            {renderField('Size', company?.size)}
+            {!!(company?.locations && company.locations.length) && (
+              <View style={styles.row}>
+                <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Locations</Text>
+                <View style={styles.chipsRow}>
+                  {company.locations.map((loc, idx) => (
+                    <View key={idx} style={[styles.chip, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                      <Text style={[styles.chipText, { color: theme.text }]}>{String(loc)}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+            {!!company?.description && (
+              <View style={styles.row}>
+                <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>About</Text>
+                <Text style={[styles.fieldValue, { color: theme.text }]} numberOfLines={3}>{company.description}</Text>
+              </View>
+            )}
+          </>
+        )}
+      </View>
+
+      <View style={[styles.detailsCard, { backgroundColor: theme.card, borderColor: theme.border, marginTop: 16 }]}>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>Company Insights</Text>
+        <View style={styles.divider} />
+        {loading && (
+          <View style={{ paddingVertical: 10 }}>
+            <ActivityIndicator color={theme.primary} />
+          </View>
+        )}
+        {!loading && !insights && (
+          <Text style={{ color: theme.textSecondary }}>No insights yet</Text>
+        )}
+        {!!insights && (
+          <>
+            {renderField('Total Jobs', insights?.totalJobs)}
+            {renderField('Open Jobs', insights?.openJobs)}
+            {renderField('Draft Jobs', insights?.draftJobs)}
+            {renderField('Total Applicants', insights?.totalApplicants)}
+            {renderField('Avg Applicants/Job', insights?.avgApplicantsPerJob)}
+            {!!(insights?.statusBreakdown) && (
+              <>
+                {renderField('Shortlisted', insights?.statusBreakdown?.shortlisted)}
+                {renderField('Hired', insights?.statusBreakdown?.hired)}
+                {renderField('Rejected', insights?.statusBreakdown?.rejected)}
+                {renderField('Pending', insights?.statusBreakdown?.pending)}
+              </>
+            )}
+            {!!insights?.mostAppliedJob && (
+              <View style={styles.row}>
+                <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Most Applied Job</Text>
+                <Text style={[styles.fieldValue, { color: theme.text }]} numberOfLines={1}>
+                  {(insights.mostAppliedJob.title || 'Job')} · {insights.mostAppliedJob.applicants}
+                </Text>
+              </View>
+            )}
+            {!!(insights?.topSkillsDemanded && insights.topSkillsDemanded.length) && (
+              <View style={styles.row}>
+                <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Top Skills</Text>
+                <View style={styles.chipsRow}>
+                  {insights.topSkillsDemanded.map((s, idx) => (
+                    <View key={idx} style={[styles.chip, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                      <Text style={[styles.chipText, { color: theme.text }]}>{`${s.skill} (${s.count})`}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+          </>
+        )}
+      </View>
+
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <TouchableOpacity style={[styles.button, { backgroundColor: '#3b82f6', flex: 1 }]} onPress={() => router.push('/(recruiter)/edit-profile')}>
           <Text style={{ color: '#fff', fontWeight: '700', textAlign: 'center' }}>Edit Profile</Text>
@@ -127,12 +248,12 @@ export default function RecruiterProfile() {
           <Text style={{ color: '#fff', fontWeight: '700', textAlign: 'center' }}>Logout</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, paddingTop: 42 },
+  container: { padding: 16, paddingTop: 42, paddingBottom: 60 },
   headerCard: {
     flexDirection: 'row',
     alignItems: 'center',
