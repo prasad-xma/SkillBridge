@@ -96,6 +96,45 @@ async function listApplications(req, res) {
   }
 }
 
+async function updateStudentProfile(req, res) {
+  try {
+    const { uid, fullName, profile } = req.body || {};
+    if (!uid) {
+      return res.status(400).json({ message: 'Missing uid' });
+    }
+
+    const nameProvided = typeof fullName === 'string';
+    const profileProvided = profile && typeof profile === 'object' && !Array.isArray(profile);
+    if (!nameProvided && !profileProvided) {
+      return res.status(400).json({ message: 'No updates provided' });
+    }
+
+    const updates = {
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    if (nameProvided) {
+      const trimmedName = fullName.trim();
+      if (!trimmedName) {
+        return res.status(400).json({ message: 'Full name cannot be empty' });
+      }
+      updates.fullName = trimmedName;
+    }
+
+    if (profileProvided) {
+      updates.profile = profile;
+    }
+
+    await db.collection('users').doc(uid).set(updates, { merge: true });
+    const snap = await db.collection('users').doc(uid).get();
+    const data = snap.exists ? snap.data() : null;
+
+    return res.status(200).json({ ok: true, user: data ? { uid: snap.id, ...data } : null });
+  } catch (error) {
+    return res.status(500).json({ message: 'Failed to update profile', error: error.message });
+  }
+}
+
 async function applyForJob(req, res) {
   try {
     const { id: jobId } = req.params;
@@ -157,4 +196,4 @@ async function applyForJob(req, res) {
   }
 }
 
-module.exports = { saveQuestionnaire, getQuestionnaire, listJobs, listApplications, applyForJob };
+module.exports = { saveQuestionnaire, getQuestionnaire, listJobs, listApplications, applyForJob, updateStudentProfile };

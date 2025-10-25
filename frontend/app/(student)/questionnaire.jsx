@@ -89,7 +89,12 @@ const StepSlider = ({ theme, label, value, onChange, steps = 11 }) => (
     <Text style={[styles.label, { color: theme.textSecondary }]}>{label}: <Text style={{ fontWeight: '700', color: theme.text }}>{value}</Text></Text>
     <View style={[styles.track, { backgroundColor: theme.border }]}> 
       {Array.from({ length: steps }).map((_, i) => (
-        <TouchableOpacity key={i} style={[styles.tick, { backgroundColor: i <= value ? theme.primary : theme.surface, borderColor: theme.border }]} onPress={() => onChange(i)} />
+        <TouchableOpacity
+          key={i}
+          style={[styles.tick, { backgroundColor: i <= value ? theme.primary : theme.surface, borderColor: theme.border }]}
+          onPress={() => onChange(i)}
+          hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+        />
       ))}
     </View>
     <View style={styles.trackLabels}>
@@ -375,8 +380,8 @@ const styles = StyleSheet.create({
   radioText: { fontSize: 13, fontWeight: '600' },
   checkbox: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 999, borderWidth: 1, marginBottom: 8 },
   checkboxText: { fontSize: 13, fontWeight: '600' },
-  track: { height: 16, borderRadius: 10, paddingHorizontal: 6, flexDirection: 'row', alignItems: 'center' },
-  tick: { width: 18, height: 10, marginHorizontal: 2, borderWidth: 1, borderRadius: 3 },
+  track: { height: 26, borderRadius: 14, paddingHorizontal: 8, paddingVertical: 4, flexDirection: 'row', alignItems: 'center' },
+  tick: { width: 24, height: 18, marginHorizontal: 3, borderWidth: 1, borderRadius: 6 },
   trackLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
   small: { fontSize: 12 },
   textArea: { borderWidth: 1, borderRadius: 10, padding: 12, minHeight: 96, textAlignVertical: 'top' },
