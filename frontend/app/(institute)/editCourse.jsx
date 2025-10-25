@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { themes } from "../../constants/colors";
 import { getSession } from "../../lib/session";
+import { API_BASE as ENV_API_BASE } from "@env";
 
 export default function EditCourse({ route, navigation }) {
   const router = useRouter();
@@ -107,7 +108,7 @@ export default function EditCourse({ route, navigation }) {
       const token = session?.idToken;
  
       const response = await fetch(
-        `http://192.168.1.4:5000/courses/update/${courseId}`,
+        `${ENV_API_BASE}/courses/update/${courseId}`,
         {
           method: "PUT",
           headers: {
@@ -384,6 +385,7 @@ const styles = StyleSheet.create({
   submitBtn: {
     backgroundColor: "#28a745",
     padding: 14,
+    paddingBottom: 20,
     borderRadius: 8,
     alignItems: "center",
     marginTop: 10,

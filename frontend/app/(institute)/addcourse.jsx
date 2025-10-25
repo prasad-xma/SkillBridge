@@ -15,6 +15,7 @@ import {
 import { themes } from "../../constants/colors";
 import { getSession } from "../../lib/session";
 import { useRouter } from "expo-router";
+import { API_BASE as ENV_API_BASE } from "@env";
 
 export default function AddCourse() {
   const router = useRouter();
@@ -78,7 +79,7 @@ export default function AddCourse() {
       const session = await getSession();
       const token = session?.idToken;
 
-      const response = await fetch("http://192.168.1.4:5000/courses/add", {
+      const response = await fetch(`${ENV_API_BASE}/courses/add`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
