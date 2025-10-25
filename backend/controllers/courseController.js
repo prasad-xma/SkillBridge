@@ -3,7 +3,7 @@ const { v4: uuidv4 } = require('uuid');
 
 // Reference Firestore
 const db = admin.firestore();
-const coursesCollection = db.collection('courses');
+ const coursesCollection = db.collection('courses');
 
 // ------------------------- ADD COURSE ------------------------- //
 async function addCourse(req, res) {
