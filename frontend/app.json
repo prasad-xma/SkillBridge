@@ -8,7 +8,7 @@
     "icon": "./assets/logo/logo_light.png",
     "userInterfaceStyle": "light",
     "extra": {
-      "API_BASE": "http://192.168.8.138:5000",
+      "API_BASE": "http://192.168.1.100:5000",
       "APP_THEME": "light"
     },
     "newArchEnabled": true,
