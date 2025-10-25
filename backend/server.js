@@ -21,6 +21,10 @@ app.use('/api/auth', authRoutes);
 const studentRoutes = require('./routes/studentRoutes');
 app.use('/api/student', studentRoutes);
 
+// Mentor routes
+const mentorRoutes = require('./routes/mentorRoutes');
+app.use('/api/mentor', mentorRoutes);
+
 // Register course routes
 const courseRoutes = require('./routes/courseRoutes');
 app.use('/courses', courseRoutes);
