@@ -23,7 +23,7 @@ export default function AddSkill() {
   const router = useRouter();
   const scheme = useColorScheme();
   const theme = scheme === "dark" ? themes.dark : themes.light;
-  const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || "http://192.168.1.4:5000";
+  const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE;
 
   const [skillName, setSkillName] = useState("");
   const [description, setDescription] = useState("");
