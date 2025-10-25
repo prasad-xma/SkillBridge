@@ -98,6 +98,13 @@ export default function StudentTabsLayout() {
           headerShown: false,
         }}
       />
+      <Tabs.Screen
+        name="progress"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
     </Tabs>
   )
 }

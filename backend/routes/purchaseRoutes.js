@@ -8,4 +8,7 @@ router.post('/', purchaseController.createPurchase);
 // List purchases by student id (and include course details)
 router.get('/:studentId', purchaseController.listPurchasesByStudent);
 
+// Update purchase completion status
+router.patch('/:purchaseId', purchaseController.updatePurchase);
+
 module.exports = router;
