@@ -144,6 +144,11 @@ export const ToastProvider = ({ children }) => {
 
   const meta = toast ? TYPE_META[toast.type] : null
   const accentColor = meta ? theme[meta.accentKey] : theme.toastInfo
+  const backgroundColor = toast?.type === 'success'
+    ? theme.toastSuccessBg
+    : toast?.type === 'error'
+      ? theme.toastErrorBg
+      : theme.toastBase
   const displayTitle = toast?.title || meta?.fallbackTitle || 'Notice'
 
   return (
@@ -160,7 +165,7 @@ export const ToastProvider = ({ children }) => {
               style={[
                 styles.toastCard,
                 {
-                  backgroundColor: theme.toastBase,
+                  backgroundColor,
                   borderLeftColor: accentColor,
                   shadowColor: theme.toastShadow,
                 },
