@@ -75,6 +75,13 @@ export default function RecruiterTabsLayout() {
           href: null,
         }}
       />
+      {/** Hidden route for editing profile */}
+      <Tabs.Screen
+        name="edit-profile"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   )
 }

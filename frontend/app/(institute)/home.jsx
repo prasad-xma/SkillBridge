@@ -94,11 +94,11 @@ export default function InstituteHome() {
     try {
       router.push({
         pathname: "/(institute)/courseDetails",
-        params: { course: JSON.stringify(course) },
+        params: { id: String(course.id || course._id || ""), course: JSON.stringify(course) },
       });
     } catch (e) {
       // fallback to react-navigation if available
-      navigation?.navigate?.("courseDetails", { course });
+      navigation?.navigate?.("courseDetails", { id: course.id || course._id, course });
     }
   };
 

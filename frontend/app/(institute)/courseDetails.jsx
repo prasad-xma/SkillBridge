@@ -9,11 +9,15 @@ import {
   Dimensions,
   Image,
   FlatList,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { themes } from "../../constants/colors";
+import Constants from "expo-constants";
+import { API_BASE as ENV_API_BASE } from "@env";
+import { getSession } from "../../lib/session";
 
 export default function CourseDetails() {
   const router = useRouter();
@@ -36,13 +40,14 @@ export default function CourseDetails() {
   const [loading, setLoading] = useState(false);
   const [course, setCourse] = useState(initialCourse);
 
-  const courseId = (course?.id || course?._id || initialCourse?.id || initialCourse?._id);
+  const courseId = (params?.id || course?.id || course?._id || initialCourse?.id || initialCourse?._id);
 
   const fetchCourse = async () => {
     if (!courseId) return;
     try {
       setLoading(true);
-      const res = await fetch(`http://192.168.1.3:5000/courses/${courseId}`);
+      const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || "";
+      const res = await fetch(`${API_BASE}/courses/${courseId}`);
       const data = await res.json();
       if (res.ok) setCourse(data);
     } catch (e) {
@@ -50,6 +55,39 @@ export default function CourseDetails() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const onDeleteCourse = () => {
+    if (!courseId) return;
+    Alert.alert(
+      "Delete Course",
+      "Are you sure you want to delete this course?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const session = await getSession();
+              const token = session?.idToken || session?.accessToken || session?.token;
+              const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || "";
+              const res = await fetch(`${API_BASE}/courses/delete/${courseId}` , {
+                method: "DELETE",
+                headers: { Authorization: token ? `Bearer ${token}` : "" },
+              });
+              let data = {};
+              try { data = await res.json(); } catch {}
+              if (!res.ok) throw new Error(data?.message || "Failed to delete course");
+              Alert.alert("Deleted", "Course deleted successfully");
+              router.back();
+            } catch (e) {
+              Alert.alert("Error", e?.message || "Could not delete course");
+            }
+          }
+        }
+      ]
+    );
   };
 
   useFocusEffect(
@@ -247,18 +285,27 @@ export default function CourseDetails() {
 
       {/* Action Buttons */}
       <View style={styles.actionContainer}>
-        <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: theme.primary }]}
-          onPress={() => {
-            router.push({
-              pathname: "/(institute)/editCourse",
-              params: { course: JSON.stringify(course) },
-            });
-          }}
-        >
-          <Ionicons name="create-outline" size={20} color="#fff" />
-          <Text style={styles.actionButtonText}>Edit Course</Text>
-        </TouchableOpacity>
+        <View style={styles.actionRow}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.actionButtonDelete]}
+            onPress={onDeleteCourse}
+          >
+            <Ionicons name="trash-sharp" size={20} color="#fff" />
+            <Text style={styles.actionButtonText}>Delete</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: theme.primary }]}
+            onPress={() => {
+              router.push({
+                pathname: "/(institute)/editCourse",
+                params: { course: JSON.stringify(course) },
+              });
+            }}
+          >
+            <Ionicons name="create-outline" size={20} color="#fff" />
+            <Text style={styles.actionButtonText}>Edit</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </ScrollView>
   );
@@ -438,6 +485,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 32,
   },
+  actionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   actionButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -449,7 +497,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 3,
+    flex: 1,
   },
+  actionButtonDelete: { backgroundColor: "#ff4d4f" },
   actionButtonText: {
     color: "#fff",
     fontSize: 16,
