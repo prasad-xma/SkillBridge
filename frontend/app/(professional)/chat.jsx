@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  BackHandler,
 } from 'react-native'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import axios from 'axios'
@@ -44,6 +45,22 @@ export default function ProfessionalChat() {
       setChecked(true)
     })()
   }, [])
+
+  // Android hardware back handling
+  useEffect(() => {
+    const onBackPress = () => {
+      if (selected) {
+        setSelected(null)
+        setMessages([])
+        return true
+      }
+      // Explicitly go to Reminders tab to avoid GO_BACK not handled
+      router.replace('/(professional)/reminders')
+      return true
+    }
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress)
+    return () => sub.remove()
+  }, [selected])
 
   const loadConversations = useCallback(async (uid) => {
     if (!uid) return
@@ -148,7 +165,7 @@ export default function ProfessionalChat() {
       {!selected ? (
         <View style={{ flex: 1 }}>
           <View style={[styles.headerBar, { borderColor: theme.border }]}> 
-            <TouchableOpacity onPress={() => router.back()} style={[styles.backBtn, { borderColor: theme.border }]}> 
+            <TouchableOpacity onPress={() => router.replace('/(professional)/reminders')} style={[styles.backBtn, { borderColor: theme.border }]}> 
               <Ionicons name="chevron-back" size={20} color={theme.text} />
             </TouchableOpacity>
             <Text style={[styles.headerTitle, { color: theme.text }]}>Messages</Text>
