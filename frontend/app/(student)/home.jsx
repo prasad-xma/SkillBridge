@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, useColorScheme, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { View, Text, StyleSheet, useColorScheme, TouchableOpacity, ScrollView, ActivityIndicator, Image, Dimensions } from 'react-native'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { themes } from '../../constants/colors'
@@ -18,6 +18,51 @@ export default function StudentHome() {
   const [skills, setSkills] = useState([])
   const [qAnswers, setQAnswers] = useState(null)
   const [skillsLoading, setSkillsLoading] = useState(true)
+  const [activeOffer, setActiveOffer] = useState(0)
+  const [sliderWidth, setSliderWidth] = useState(Dimensions.get('window').width - 32)
+  const sliderRef = useRef(null)
+
+  const offerImages = [
+    require('../../assets/offers/1.png'),
+    require('../../assets/offers/2.png'),
+    require('../../assets/offers/3.png'),
+  ]
+
+  const handleOfferLayout = useCallback(
+    (event) => {
+      const width = event?.nativeEvent?.layout?.width
+      if (!width) return
+      sliderRef.current?.scrollTo({ x: activeOffer * width, animated: false })
+      if (Math.abs(width - sliderWidth) > 1) {
+        setSliderWidth(width)
+      }
+    },
+    [activeOffer, sliderWidth],
+  )
+
+  const handleOfferScroll = useCallback(
+    (event) => {
+      if (!sliderWidth) return
+      const offsetX = event?.nativeEvent?.contentOffset?.x || 0
+      const nextIndex = Math.round(offsetX / sliderWidth)
+      if (nextIndex !== activeOffer) {
+        setActiveOffer(nextIndex)
+      }
+    },
+    [activeOffer, sliderWidth],
+  )
+
+  useEffect(() => {
+    if (!sliderWidth || offerImages.length < 2) return undefined
+    const id = setInterval(() => {
+      setActiveOffer((prev) => {
+        const next = (prev + 1) % offerImages.length
+        sliderRef.current?.scrollTo({ x: next * sliderWidth, animated: true })
+        return next
+      })
+    }, 2000)
+    return () => clearInterval(id)
+  }, [sliderWidth, offerImages.length])
 
   useEffect(() => {
     (async () => {
@@ -169,6 +214,46 @@ export default function StudentHome() {
           <View style={[styles.spark, { backgroundColor: theme.primary + '1A' }]} />
           <View style={[styles.spark, { backgroundColor: theme.primary + '26', width: 10, height: 10 }]} />
           <View style={[styles.spark, { backgroundColor: theme.primary + '33', width: 6, height: 6 }]} />
+        </View>
+      </View>
+
+      <View
+        style={[styles.offerSection, { backgroundColor: theme.surface, borderColor: theme.border }]}
+        onLayout={handleOfferLayout}
+      >
+        <View style={styles.offerHeader}>
+          <Text style={[styles.offerTitle, { color: theme.text }]}>Seasonal Offers</Text>
+          <Text style={[styles.offerSubtitle, { color: theme.textSecondary }]}>Unlock limited-time deals tailored for your growth journey.</Text>
+        </View>
+        <ScrollView
+          ref={sliderRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          decelerationRate="fast"
+          snapToAlignment="center"
+          onMomentumScrollEnd={handleOfferScroll}
+          scrollEventThrottle={16}
+        >
+          {offerImages.map((img, index) => (
+            <View
+              key={index}
+              style={[styles.offerCard, { width: sliderWidth }]}
+            >
+              <Image source={img} style={styles.offerImage} resizeMode="cover" />
+            </View>
+          ))}
+        </ScrollView>
+        <View style={styles.offerDots}>
+          {offerImages.map((_, index) => (
+            <View
+              key={index}
+              style={[
+                styles.offerDot,
+                { backgroundColor: index === activeOffer ? theme.primary : theme.border },
+              ]}
+            />
+          ))}
         </View>
       </View>
 
@@ -327,6 +412,38 @@ const styles = StyleSheet.create({
   relatedItemTitle: { fontSize: 14, fontWeight: '800' },
   relatedItemMeta: { fontSize: 12, marginTop: 2 },
   relatedEmpty: { fontSize: 13 },
+  offerSection: {
+    marginTop: 18,
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  offerHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 18,
+    paddingBottom: 14,
+    gap: 4,
+  },
+  offerTitle: { fontSize: 18, fontWeight: '800' },
+  offerSubtitle: { fontSize: 13, lineHeight: 18 },
+  offerCard: {
+    height: 180,
+  },
+  offerImage: {
+    width: '100%',
+    height: '100%',
+  },
+  offerDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+  },
+  offerDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
 })
 
 
