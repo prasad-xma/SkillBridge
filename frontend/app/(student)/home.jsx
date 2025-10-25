@@ -1,16 +1,23 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, useColorScheme, TouchableOpacity, ScrollView } from 'react-native'
+import { View, Text, StyleSheet, useColorScheme, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { themes } from '../../constants/colors'
 import { getSession } from '../../lib/session'
 import { router } from 'expo-router'
+import axios from 'axios'
+import Constants from 'expo-constants'
+import { API_BASE as ENV_API_BASE } from '@env'
 // import SwipeBackWrapper from '../components/SwipeBackWrapper'
 
 export default function StudentHome() {
   const scheme = useColorScheme()
   const theme = scheme === 'dark' ? themes.dark : themes.light
   const [user, setUser] = useState(null)
+  const [preparing, setPreparing] = useState(false)
+  const [skills, setSkills] = useState([])
+  const [qAnswers, setQAnswers] = useState(null)
+  const [skillsLoading, setSkillsLoading] = useState(true)
 
   useEffect(() => {
     (async () => {
@@ -24,10 +31,123 @@ export default function StudentHome() {
   }, [])
 
   const firstName = user?.fullName?.split(' ')?.[0] || 'Student'
+  const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || 'http://localhost:5000'
+
+  const getIdentity = () => {
+    if (user?.uid) {
+      return {
+        query: `userId=${encodeURIComponent(user.uid)}`,
+        payload: { userId: user.uid },
+      }
+    }
+    if (user?.email) {
+      return {
+        query: `email=${encodeURIComponent(user.email)}`,
+        payload: { email: user.email },
+      }
+    }
+    return null
+  }
+
+  const prepareRecommendations = async () => {
+    const identity = getIdentity()
+    if (!identity) {
+      return { redirect: '/(student)/questionnaire' }
+    }
+    try {
+      const response = await axios.get(`${API_BASE}/api/recommendations?${identity.query}`)
+      if (response?.data?.isStale) {
+        await axios.post(`${API_BASE}/api/recommend-skills`, { ...identity.payload, force: true })
+      }
+      return { redirect: '/(student)/recommendations' }
+    } catch (err) {
+      const status = err?.response?.status
+      const message = (err?.response?.data?.message || '').toLowerCase()
+      if (status === 404 && message.includes('questionnaire')) {
+        return { redirect: '/(student)/questionnaire' }
+      }
+      if (status === 404) {
+        await axios.post(`${API_BASE}/api/recommend-skills`, { ...identity.payload })
+        return { redirect: '/(student)/recommendations' }
+      }
+      return { error: err?.response?.data?.message || err?.message || 'Failed to prepare recommendations' }
+    }
+  }
+
+  const handleExplore = async () => {
+    if (!user || preparing) return
+    setPreparing(true)
+    const result = await prepareRecommendations()
+    setPreparing(false)
+    if (result?.redirect) {
+      router.push(result.redirect)
+    } else {
+      router.push('/(student)/recommendations')
+    }
+  }
+
+  const normalize = (s) => (s || '').toString().toLowerCase()
+  const scoreSkill = (skill, ans) => {
+    if (!skill || !ans) return 0
+    let score = 0
+    const domain = normalize(ans.domain)
+    const interests = Array.isArray(ans.interests) ? ans.interests.map(normalize) : []
+    const name = normalize(skill.skillName)
+    const desc = normalize(skill.description)
+    const cat = normalize(skill.category)
+    if (domain && cat === domain) score += 3
+    interests.forEach((i) => {
+      if (!i) return
+      if (cat.includes(i)) score += 2
+      if (name.includes(i)) score += 1
+      if (desc.includes(i)) score += 1
+    })
+    return score
+  }
+
+  useEffect(() => {
+    ;(async () => {
+      if (!user) return
+      setSkillsLoading(true)
+      try {
+        const idQuery = user?.uid ? `uid=${encodeURIComponent(user.uid)}` : user?.email ? `email=${encodeURIComponent(user.email)}` : ''
+        const results = await Promise.allSettled([
+          axios.get(`${API_BASE}/skills`),
+          idQuery ? axios.get(`${API_BASE}/api/student/questionnaire?${idQuery}`) : Promise.resolve({ data: null }),
+        ])
+        const [skillsRes, qRes] = results
+        setSkills(skillsRes.status === 'fulfilled' && Array.isArray(skillsRes.value?.data) ? skillsRes.value.data : [])
+        setQAnswers(qRes.status === 'fulfilled' ? (qRes.value?.data?.answers || null) : null)
+      } catch (e) {
+        setSkills([])
+        setQAnswers(null)
+      } finally {
+        setSkillsLoading(false)
+      }
+    })()
+  }, [user])
+
+  const relatedSkills = (() => {
+    if (!Array.isArray(skills) || skills.length === 0) return []
+    if (!qAnswers) return skills.slice(0, 6)
+    const scored = skills
+      .map((s) => ({ s, score: scoreSkill(s, qAnswers) }))
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map((x) => x.s)
+    if (scored.length > 0) return scored.slice(0, 6)
+    return skills.slice(0, 6)
+  })()
 
   return (
     // <SwipeBackWrapper style={{ flex: 1 }}>
-      <ScrollView style={{ flex: 1, backgroundColor: theme.background }} contentContainerStyle={styles.container}>
+      <ScrollView
+        style={{ flex: 1, backgroundColor: theme.background }}
+        showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.container}>
         <View style={[styles.hero, { backgroundColor: theme.surface, borderColor: theme.border }]}> 
           <View style={styles.badgeRow}>
             <View style={[styles.badge, { backgroundColor: theme.tint + '22', borderColor: theme.tint + '55' }]}>
@@ -53,11 +173,14 @@ export default function StudentHome() {
       </View>
 
       <View style={styles.quickRow}>
-        <TouchableOpacity style={[styles.quickChip, { backgroundColor: theme.surface, borderColor: theme.border }]} onPress={() => router.push('/(student)/recommendations')}>
-          <View style={[styles.quickIconWrap, { backgroundColor: theme.primary + '1A' }]}>
-            <Ionicons name="sparkles" size={18} color={theme.primary} />
+        <TouchableOpacity
+          style={[styles.quickChip, { backgroundColor: theme.surface, borderColor: theme.border }]}
+          onPress={() => router.push('/(student)/courses')}
+        >
+          <View style={[styles.quickIconWrap, { backgroundColor: theme.primary + '1A' }]}> 
+            <Ionicons name="book-outline" size={18} color={theme.primary} />
           </View>
-          <Text style={[styles.quickLabel, { color: theme.text }]}>Recommendations</Text>
+          <Text style={[styles.quickLabel, { color: theme.text }]}>Courses</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.quickChip, { backgroundColor: theme.surface, borderColor: theme.border }]} onPress={() => router.push('/(student)/network')}>
           <View style={[styles.quickIconWrap, { backgroundColor: theme.accent + '1A' }]}>
@@ -80,9 +203,13 @@ export default function StudentHome() {
           <Text style={styles.showcaseTitle}>Level up faster</Text>
           <Text style={styles.showcaseSubtitle}>Explore curated learning paths crafted for you</Text>
         </View>
-        <TouchableOpacity style={[styles.showcaseBtn, { backgroundColor: '#ffffff22', borderColor: '#ffffff44' }]} onPress={() => router.push('/(student)/recommendations')}>
+        <TouchableOpacity
+          style={[styles.showcaseBtn, { backgroundColor: '#ffffff22', borderColor: '#ffffff44', opacity: preparing ? 0.7 : 1 }]}
+          onPress={handleExplore}
+          disabled={preparing}
+        >
           <Ionicons name="arrow-forward" size={16} color="#fff" />
-          <Text style={styles.showcaseBtnText}>Explore</Text>
+          {preparing ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.showcaseBtnText}>Explore</Text>}
         </TouchableOpacity>
       </LinearGradient>
 
@@ -100,13 +227,42 @@ export default function StudentHome() {
           <Text style={styles.ctaButtonText}>Start Quiz</Text>
         </TouchableOpacity>
       </View>
+
+      <View style={styles.relatedWrap}>
+        <View style={styles.relatedHeaderRow}>
+          <View style={[styles.relatedIcon, { backgroundColor: theme.accent + '1A', borderColor: theme.accent + '33' }]}>
+            <Ionicons name="flash-outline" size={16} color={theme.accent} />
+          </View>
+          <Text style={[styles.relatedTitle, { color: theme.text }]}>Related Skills</Text>
+        </View>
+        {skillsLoading ? (
+          <ActivityIndicator />
+        ) : relatedSkills.length === 0 ? (
+          <Text style={[styles.relatedEmpty, { color: theme.textSecondary }]}>No skills to show</Text>
+        ) : (
+          <View style={styles.relatedList}>
+            {relatedSkills.map((sk) => (
+              <View key={sk.id} style={[styles.relatedItem, { backgroundColor: theme.skillCardBg, borderColor: theme.skillCardBorder }]}> 
+                <View style={styles.relatedItemIcon}>
+                  <Ionicons name="flash" size={14} color={theme.tint} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.relatedItemTitle, { color: theme.text }]} numberOfLines={1}>{sk.skillName}</Text>
+                  <Text style={[styles.relatedItemMeta, { color: theme.textSecondary }]} numberOfLines={1}>{sk.category} • {sk.difficulty} • {sk.duration}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+      </View>
       </ScrollView>
     // </SwipeBackWrapper>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, paddingTop: 42 },
+  container: { padding: 16, paddingTop: 42, paddingBottom: 40 },
   hero: {
     borderRadius: 16,
     borderWidth: 1,
@@ -161,6 +317,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   ctaButtonText: { color: '#fff', fontWeight: '800' },
+  relatedWrap: { marginTop: 18 },
+  relatedHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+  relatedIcon: { width: 28, height: 28, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  relatedTitle: { fontSize: 16, fontWeight: '800' },
+  relatedList: { gap: 10 },
+  relatedItem: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 12, padding: 10 },
+  relatedItemIcon: { width: 26, height: 26, borderRadius: 8, backgroundColor: '#ffffff44', alignItems: 'center', justifyContent: 'center' },
+  relatedItemTitle: { fontSize: 14, fontWeight: '800' },
+  relatedItemMeta: { fontSize: 12, marginTop: 2 },
+  relatedEmpty: { fontSize: 13 },
 })
 
 

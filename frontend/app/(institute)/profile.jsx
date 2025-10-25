@@ -6,23 +6,85 @@ import {
   TouchableOpacity,
   useColorScheme,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { themes } from "../../constants/colors";
 import { getSession, clearSession } from "../../lib/session";
 import { router } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import Constants from "expo-constants";
+import { API_BASE as ENV_API_BASE } from "@env";
 
 export default function InstituteProfile() {
+  const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || "http://192.168.1.4:5000";
   const scheme = useColorScheme();
   const theme = scheme === "dark" ? themes.dark : themes.light;
   const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     (async () => {
       const s = await getSession();
       setUser(s);
+      await loadProfile();
     })();
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      // Refetch profile when returning to this screen
+      loadProfile();
+      return undefined;
+    }, [])
+  );
+
+  const loadProfile = async () => {
+    try {
+      setError(null);
+      setLoading(true);
+      const session = await getSession();
+      const token = session?.idToken || session?.token || session?.accessToken;
+      if (!token) {
+        // Fallback to session data if no token available
+        setProfile({
+          name: session?.fullName,
+          email: session?.email,
+          type: session?.role,
+        });
+        return;
+      }
+
+      const urls = [
+        `${API_BASE}/institutes/me`,
+        `${API_BASE}/api/institutes/me`,
+        `${API_BASE}/api/auth/me`,
+      ];
+      let lastErr = null;
+      for (const url of urls) {
+        try {
+          const res = await fetch(url, {
+            headers: { Authorization: token ? `Bearer ${token}` : "" },
+          });
+          let data = {};
+          try { data = await res.json(); } catch {}
+          if (!res.ok) throw new Error(`${data?.message || 'Request failed'} (GET ${url} -> ${res.status})`);
+          setProfile(data);
+          lastErr = null;
+          break;
+        } catch (e) {
+          lastErr = e;
+        }
+      }
+      if (lastErr) throw lastErr;
+    } catch (e) {
+      setError(e?.message || "Could not load profile");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const onLogout = async () => {
     await clearSession();
@@ -30,7 +92,7 @@ export default function InstituteProfile() {
   };
 
   const onEditProfile = () => {
-    router.push("/institute/edit-profile"); // Navigate to edit profile page
+    router.push("/(institute)/editProfile");
   };
 
   return (
@@ -40,25 +102,65 @@ export default function InstituteProfile() {
     >
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.primary }]}>
-        <Text style={styles.headerName}>{user?.fullName || "Loading..."}</Text>
-        <Text style={styles.headerRole}>{user?.role || ""}</Text>
+        <Text style={styles.headerName}>{profile?.name || user?.fullName || "Loading..."}</Text>
+        <Text style={styles.headerRole}>{profile?.type || user?.role || ""}</Text>
       </View>
 
-      {/* User Details Card */}
-      <View style={[styles.card, { backgroundColor: theme.card }]}>
-        <Text style={[styles.label, { color: theme.textSecondary }]}>Name</Text>
-        <Text style={[styles.value, { color: theme.text }]}>
-          {user?.fullName}
-        </Text> 
+      {loading && (
+        <View style={styles.centerState}>
+          <ActivityIndicator size="large" color="#fff" />
+        </View>
+      )}
 
-        <Text style={[styles.label, { color: theme.textSecondary }]}>
-          Email
-        </Text>
-        <Text style={[styles.value, { color: theme.text }]}>{user?.email}</Text>
+      {!!error && !loading && (
+        <View style={[styles.card, { backgroundColor: theme.card }]}>
+          <View style={styles.errorRow}>
+            <Ionicons name="warning-outline" size={20} color="#ff4d4f" />
+            <Text style={[styles.errorText, { color: theme.text }]}>{error}</Text>
+            <TouchableOpacity style={styles.retryBtn} onPress={loadProfile}>
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
-        <Text style={[styles.label, { color: theme.textSecondary }]}>Role</Text>
-        <Text style={[styles.value, { color: theme.text }]}>{user?.role}</Text>
-      </View>
+      {!loading && (
+        <View style={[styles.card, { backgroundColor: theme.card }]}>
+          <Text style={[styles.label, { color: theme.textSecondary }]}>Institute Name</Text>
+          <Text style={[styles.value, { color: theme.text }]}>{profile?.name || user?.fullName || "-"}</Text>
+
+          <Text style={[styles.label, { color: theme.textSecondary }]}>Email</Text>
+          <Text style={[styles.value, { color: theme.text }]}>{profile?.email || user?.email || "-"}</Text>
+
+          {!!profile?.phone && (
+            <>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>Phone</Text>
+              <Text style={[styles.value, { color: theme.text }]}>{profile.phone}</Text>
+            </>
+          )}
+
+          {!!profile?.address && (
+            <>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>Address</Text>
+              <Text style={[styles.value, { color: theme.text }]}>{profile.address}</Text>
+            </>
+          )}
+
+          {!!profile?.website && (
+            <>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>Website</Text>
+              <Text style={[styles.value, { color: theme.text }]}>{profile.website}</Text>
+            </>
+          )}
+
+          {!!profile?.description && (
+            <>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>About</Text>
+              <Text style={[styles.value, { color: theme.text }]}>{profile.description}</Text>
+            </>
+          )}
+        </View>
+      )}
 
       {/* Action Buttons */}
       <View style={styles.buttonRow}>
@@ -123,6 +225,27 @@ const styles = StyleSheet.create({
     elevation: 3,
     marginBottom: 30,
   },
+  centerState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 20,
+  },
+  errorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 14,
+  },
+  retryBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: "#e7f1ff",
+  },
+  retryText: { color: "#0a58ca", fontWeight: "600" },
   label: {
     fontSize: 14,
     fontWeight: "600",

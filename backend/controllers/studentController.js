@@ -8,7 +8,6 @@ async function saveQuestionnaire(req, res) {
     if ((!uid && !email) || !answers || typeof answers !== 'object') {
       return res.status(400).json({ message: 'Missing identifier or answers' });
     }
-
     const now = admin.firestore.FieldValue.serverTimestamp();
     const docId = uid || email;
 
@@ -38,6 +37,27 @@ async function saveQuestionnaire(req, res) {
     return res.status(200).json({ ok: true, storedAs: docId });
   } catch (error) {
     return res.status(500).json({ message: 'Failed to save questionnaire', error: error.message });
+  }
+}
+
+async function getQuestionnaire(req, res) {
+  try {
+    const { uid, userId, email } = req.query || {}
+    const docId = uid || userId || email
+    if (!docId) {
+      return res.status(400).json({ message: 'Missing uid, userId or email' })
+    }
+
+    const snap = await db.collection('questionnaireResponses').doc(docId).get()
+    if (!snap.exists) {
+      return res.status(404).json({ message: 'Questionnaire not found' })
+    }
+    const data = snap.data() || {}
+    const answers = data.answers || {}
+    const updatedAt = data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : null
+    return res.status(200).json({ answers, updatedAt })
+  } catch (error) {
+    return res.status(500).json({ message: 'Failed to load questionnaire', error: error.message })
   }
 }
 
@@ -73,6 +93,45 @@ async function listApplications(req, res) {
     return res.status(200).json(items);
   } catch (error) {
     return res.status(500).json({ message: 'Failed to load applications', error: error.message });
+  }
+}
+
+async function updateStudentProfile(req, res) {
+  try {
+    const { uid, fullName, profile } = req.body || {};
+    if (!uid) {
+      return res.status(400).json({ message: 'Missing uid' });
+    }
+
+    const nameProvided = typeof fullName === 'string';
+    const profileProvided = profile && typeof profile === 'object' && !Array.isArray(profile);
+    if (!nameProvided && !profileProvided) {
+      return res.status(400).json({ message: 'No updates provided' });
+    }
+
+    const updates = {
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    if (nameProvided) {
+      const trimmedName = fullName.trim();
+      if (!trimmedName) {
+        return res.status(400).json({ message: 'Full name cannot be empty' });
+      }
+      updates.fullName = trimmedName;
+    }
+
+    if (profileProvided) {
+      updates.profile = profile;
+    }
+
+    await db.collection('users').doc(uid).set(updates, { merge: true });
+    const snap = await db.collection('users').doc(uid).get();
+    const data = snap.exists ? snap.data() : null;
+
+    return res.status(200).json({ ok: true, user: data ? { uid: snap.id, ...data } : null });
+  } catch (error) {
+    return res.status(500).json({ message: 'Failed to update profile', error: error.message });
   }
 }
 
@@ -137,4 +196,4 @@ async function applyForJob(req, res) {
   }
 }
 
-module.exports = { saveQuestionnaire, listJobs, listApplications, applyForJob };
+module.exports = { saveQuestionnaire, getQuestionnaire, listJobs, listApplications, applyForJob, updateStudentProfile };

@@ -11,12 +11,15 @@ async function addCourse(req, res) {
     const {
       courseName,
       description,
+      category,
+      difficulty,
       duration,
       chapters,
       fees,
+      learningOutcomes,
     } = req.body || {};
 
-    if (!courseName || !description || !duration || !chapters || !fees) {
+    if (!courseName || !description || !category || !difficulty || !duration || !fees) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
@@ -40,9 +43,12 @@ async function addCourse(req, res) {
       id: courseId,
       courseName,
       description,
+      category,
+      difficulty,
       duration,
-      chapters,
+      chapters: Array.isArray(chapters) ? chapters : [],
       fees,
+      learningOutcomes: Array.isArray(learningOutcomes) ? learningOutcomes : [],
       thumbnailUrl,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -83,6 +89,14 @@ async function updateCourse(req, res) {
       });
 
       updates.thumbnailUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+    }
+
+    // Parse JSON fields if they exist
+    if (updates.chapters && typeof updates.chapters === 'string') {
+      updates.chapters = JSON.parse(updates.chapters);
+    }
+    if (updates.learningOutcomes && typeof updates.learningOutcomes === 'string') {
+      updates.learningOutcomes = JSON.parse(updates.learningOutcomes);
     }
 
     await coursesCollection.doc(courseId).update(updates);
@@ -126,7 +140,12 @@ async function getCourseDetails(req, res) {
       return res.status(404).json({ message: 'Course not found' });
     }
 
-    return res.status(200).json(courseSnap.data());
+    const courseData = courseSnap.data();
+    return res.status(200).json({
+      ...courseData,
+      id: courseSnap.id, // Include the document ID
+      _id: courseSnap.id, // Also include as _id for compatibility
+    });
   } catch (error) {
     return res.status(500).json({ message: 'Failed to fetch course details', error: error.message });
   }
@@ -136,7 +155,11 @@ async function getCourseDetails(req, res) {
 async function listCourses(req, res) {
   try {
     const snapshot = await coursesCollection.orderBy('createdAt', 'desc').get();
-    const courses = snapshot.docs.map((doc) => doc.data());
+    const courses = snapshot.docs.map((doc) => ({
+      ...doc.data(),
+      id: doc.id, // Include the document ID
+      _id: doc.id, // Also include as _id for compatibility
+    }));
 
     return res.status(200).json(courses);
   } catch (error) {

@@ -52,6 +52,15 @@ export default function RecruiterTabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
+          ),
+        }}
+      />
       {/** Hidden route for posting a job (navigated via router.push), not shown in tab bar */}
       <Tabs.Screen
         name="post-job"

@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { router, Tabs } from 'expo-router'
 import { useColorScheme, View, Text } from 'react-native'
-
 import { getSession } from '../../lib/session'
 import { themes } from '../../constants/colors'
 
