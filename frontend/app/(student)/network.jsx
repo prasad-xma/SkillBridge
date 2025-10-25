@@ -162,26 +162,30 @@ export default function StudentNetwork() {
     } catch {}
   }, [selected?.id, user?.uid, user?.fullName])
 
-  const renderContact = ({ item }) => (
-    <TouchableOpacity
-      onPress={() => startChat(item)}
-      activeOpacity={0.85}
-      style={[styles.contactCard, { backgroundColor: theme.card, borderColor: theme.border }]}
-    >
-      <View style={{ flex: 1 }}>
-        <Text style={[styles.contactName, { color: theme.text }]}>{item.fullName || item.email || 'User'}</Text>
-        {item.subtitle ? (
-          <Text style={[styles.contactSubtitle, { color: theme.textSecondary }]}>{item.subtitle}</Text>
-        ) : null}
-        {item.role ? (
-          <View style={[styles.rolePill, { backgroundColor: theme.surface, borderColor: theme.border }]}> 
-            <Text style={{ color: theme.textSecondary, fontSize: 11, fontWeight: '700', textTransform: 'capitalize' }}>{item.role}</Text>
-          </View>
-        ) : null}
-      </View>
-      <Ionicons name="chatbubble-ellipses" size={20} color={theme.tint} />
-    </TouchableOpacity>
-  )
+  const renderContact = ({ item }) => {
+    const role = String(item.role || '').toLowerCase()
+    const stripeColor = role === 'professional' ? theme.primary : role === 'institute' ? theme.tint : theme.accent
+    return (
+      <TouchableOpacity
+        onPress={() => startChat(item)}
+        activeOpacity={0.85}
+        style={[styles.contactCard, { backgroundColor: theme.card, borderColor: theme.border, borderLeftWidth: 4, borderLeftColor: stripeColor, shadowColor: '#000' }]}
+      >
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.contactName, { color: theme.text }]} numberOfLines={1}>{item.fullName || item.email || 'User'}</Text>
+          {item.subtitle ? (
+            <Text style={[styles.contactSubtitle, { color: theme.textSecondary }]} numberOfLines={1}>{item.subtitle}</Text>
+          ) : null}
+          {item.role ? (
+            <View style={[styles.rolePill, { backgroundColor: stripeColor + '14', borderColor: stripeColor + '55' }]}> 
+              <Text style={{ color: stripeColor, fontSize: 11, fontWeight: '700', textTransform: 'capitalize' }}>{item.role}</Text>
+            </View>
+          ) : null}
+        </View>
+        <Ionicons name="chatbubble-ellipses" size={20} color={stripeColor} />
+      </TouchableOpacity>
+    )
+  }
 
   const openConversation = useCallback(async (conv) => {
     if (!conv?.id) return
@@ -226,7 +230,7 @@ export default function StudentNetwork() {
       <TouchableOpacity
         onPress={() => openConversation(item)}
         activeOpacity={0.85}
-        style={[styles.chatItem, { borderColor: theme.border }]}
+        style={[styles.chatItem, { borderColor: theme.border, borderLeftWidth: 4, borderLeftColor: theme.primary, shadowColor: '#000' }]}
       >
         <View style={{ flex: 1 }}>
           <Text style={[styles.chatTitleText, { color: theme.text }]} numberOfLines={1}>{title}</Text>
@@ -237,7 +241,9 @@ export default function StudentNetwork() {
             <Text style={[styles.chatPreviewText, { color: theme.textSecondary }]} numberOfLines={1}>{preview}</Text>
           ) : null}
         </View>
-        <Text style={{ color: theme.textSecondary, fontSize: 12, marginLeft: 8 }}>{timeStr}</Text>
+        <View style={[styles.timePill, { backgroundColor: theme.surface, borderColor: theme.border }]}> 
+          <Text style={[styles.timeText, { color: theme.textSecondary }]}>{timeStr}</Text>
+        </View>
       </TouchableOpacity>
     )
   }
@@ -250,10 +256,20 @@ export default function StudentNetwork() {
       {!selected ? (
         <View style={{ flex: 1 }}>
           <View style={[styles.headerBar, { borderColor: theme.border }]}> 
-            <Text style={[styles.headerTitle, { color: theme.text }]}>Network</Text>
+            <View style={styles.headerRow}>
+              <View style={[styles.headerIcon, { backgroundColor: theme.primary + '1A', borderColor: theme.primary + '33' }]}> 
+                <Ionicons name="people-outline" size={18} color={theme.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.headerTitle, { color: theme.text }]}>Network</Text>
+                <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
+                  {conversations.length} conversations • {contacts.length} contacts
+                </Text>
+              </View>
+            </View>
           </View>
           <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
-            <View style={[styles.searchBox, { borderColor: theme.border, backgroundColor: theme.surface }]}> 
+            <View style={[styles.searchBox, { borderColor: theme.border, backgroundColor: theme.surface, shadowColor: '#000' }]}> 
               <Ionicons name="search" size={18} color={theme.textSecondary} />
               <TextInput
                 value={query}

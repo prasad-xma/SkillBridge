@@ -170,17 +170,17 @@ export default function AddSkill() {
       <Text style={[styles.title, { color: theme.text }]}>Add New Skill</Text>
 
       <TextInput
-        style={[styles.input, { color: theme.text, borderColor: theme.border }]}
+        style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.card }]}
         placeholder="Skill Name"
-        placeholderTextColor={theme.placeholder}
+        placeholderTextColor={theme.text}
         value={skillName}
         onChangeText={setSkillName}
       />
 
-      <TextInput
-        style={[styles.textarea, { color: theme.text, borderColor: theme.border }]}
+      <TextInput  
+        style={[styles.textarea, { color: theme.text, borderColor: theme.border, backgroundColor: theme.card }]}
         placeholder="Description"
-        placeholderTextColor={theme.placeholder}
+        placeholderTextColor={theme.text}
         value={description}
         onChangeText={setDescription}
         multiline
@@ -237,9 +237,9 @@ export default function AddSkill() {
       </View>
 
       <TextInput
-        style={[styles.input, { color: theme.text, borderColor: theme.border }]}
+        style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.card }]}
         placeholder="Duration (e.g. 4 weeks, 2 months)"
-        placeholderTextColor={theme.placeholder}
+        placeholderTextColor={theme.text}
         value={duration}
         onChangeText={setDuration}
       />
@@ -251,10 +251,10 @@ export default function AddSkill() {
           <TextInput
             style={[
               styles.input,
-              { flex: 1, color: theme.text, borderColor: theme.border, marginRight: 8 },
+              { flex: 1, color: theme.text, borderColor: theme.border, backgroundColor: theme.card, marginRight: 8 },
             ]}
             placeholder="Add Prerequisite"
-            placeholderTextColor={theme.placeholder}
+            placeholderTextColor={theme.text}
             value={prerequisiteInput}
             onChangeText={setPrerequisiteInput}
           />
@@ -278,10 +278,10 @@ export default function AddSkill() {
           <TextInput
             style={[
               styles.input,
-              { flex: 1, color: theme.text, borderColor: theme.border, marginRight: 8 },
+              { flex: 1, color: theme.text, borderColor: theme.border, backgroundColor: theme.card, marginRight: 8 },
             ]}
             placeholder="Add Learning Outcome"
-            placeholderTextColor={theme.placeholder}
+            placeholderTextColor={theme.text}
             value={outcomeInput}
             onChangeText={setOutcomeInput}
           />
@@ -319,8 +319,6 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
     fontSize: 16,
-    backgroundColor: "#fff",
-    borderColor: "#ccc",
   },
   textarea: {
     borderWidth: 1,
@@ -331,8 +329,6 @@ const styles = StyleSheet.create({
     minHeight: 120,
     maxHeight: 200,
     textAlignVertical: "top",
-    backgroundColor: "#fff",
-    borderColor: "#ccc",
   },
   sectionContainer: {
     marginBottom: 20,

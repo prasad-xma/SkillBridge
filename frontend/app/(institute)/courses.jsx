@@ -95,9 +95,9 @@ export default function CoursesPage() {
 
   const onReadMore = (course) => {
     try {
-      router.push({ pathname: "/(institute)/courseDetails", params: { course: JSON.stringify(course) } });
+      router.push({ pathname: "/(institute)/courseDetails", params: { id: String(course.id || course._id || ""), course: JSON.stringify(course) } });
     } catch (e) {
-      navigation?.navigate?.("courseDetails", { course });
+      navigation?.navigate?.("courseDetails", { id: course.id || course._id, course });
     }
   };
 
@@ -136,7 +136,10 @@ export default function CoursesPage() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
-      <ScrollView style={[styles.container, { backgroundColor: theme.background }]}> 
+      <ScrollView
+        style={[styles.container, { backgroundColor: theme.background }]}
+        contentContainerStyle={{ paddingBottom: 24 }}
+      > 
       <View style={[styles.headerContainer, styles.headerHero, { backgroundColor: theme.primary }]}>
         <View style={styles.shapeOne} />
         <View style={styles.shapeTwo} />
@@ -263,7 +266,7 @@ export default function CoursesPage() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 15, backgroundColor: '#f4f6f9' },
+  container: { flex: 1, padding: 20, backgroundColor: '#f4f6f9' },
   headerContainer: { padding: 20 },
   headerHero: {
     backgroundColor: '#0d6efd',
