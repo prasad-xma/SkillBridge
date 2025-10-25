@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, TextInput, StyleSheet, useColorScheme, TouchableOpacity, ScrollView, Alert } from 'react-native'
+import { View, Text, TextInput, StyleSheet, useColorScheme, TouchableOpacity, ScrollView } from 'react-native'
 import { themes } from '../../constants/colors'
 import { getSession } from '../../lib/session'
 import { router } from 'expo-router'
@@ -11,6 +11,12 @@ export default function RecruiterPostJob() {
   const scheme = useColorScheme()
   const theme = scheme === 'dark' ? themes.dark : themes.light
   const [checked, setChecked] = useState(false)
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'info' })
+
+  const showToast = (message, type = 'info', duration = 2500) => {
+    setToast({ visible: true, message, type })
+    if (duration > 0) setTimeout(() => setToast((t) => ({ ...t, visible: false })), duration)
+  }
 
   const [form, setForm] = useState({
     title: '',
@@ -40,9 +46,17 @@ export default function RecruiterPostJob() {
     try {
       const session = await getSession()
       const recruiterId = session?.uid
-      if (!recruiterId) return Alert.alert('Not authorized', 'Missing recruiter session')
+      if (!recruiterId) {
+        showToast('Not authorized: missing recruiter session', 'error')
+        return
+      }
 
       const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE
+      if (!API_BASE) {
+        showToast('API_BASE not set. Configure in frontend/.env or app.json', 'error')
+        return
+      }
+
       const payload = {
         title: form.title,
         location: form.location,
@@ -53,10 +67,10 @@ export default function RecruiterPostJob() {
         recruiterId,
       }
       await axios.post(`${API_BASE}/api/recruiter/jobs`, payload)
-      Alert.alert('Success', 'Job posted successfully')
-      router.replace('/(recruiter)/jobs')
+      showToast('Job posted successfully', 'success')
+      setTimeout(() => router.replace('/(recruiter)/jobs'), 1200)
     } catch (e) {
-      Alert.alert('Error', e?.response?.data?.message || e?.message || 'Failed to post job')
+      showToast(e?.response?.data?.message || e?.message || 'Failed to post job', 'error')
     }
   }
 
@@ -137,7 +151,7 @@ export default function RecruiterPostJob() {
 
         {/* Actions */}
         <View style={styles.actionsRow}>
-          <TouchableOpacity style={[styles.actionBtn, styles.draft]} onPress={() => Alert.alert('Saved', 'Draft saved locally (placeholder)')}>
+          <TouchableOpacity style={[styles.actionBtn, styles.draft]} onPress={() => showToast('Draft saved locally (placeholder)', 'info')}>
             <Text style={styles.actionText}>Save Draft</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.actionBtn, styles.post]} onPress={onPost}>
@@ -145,6 +159,11 @@ export default function RecruiterPostJob() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      {toast.visible && (
+        <View style={[styles.toast, toast.type === 'error' ? styles.toastError : toast.type === 'success' ? styles.toastSuccess : styles.toastInfo]}>
+          <Text style={styles.toastText}>{toast.message}</Text>
+        </View>
+      )}
     </View>
   )
 }
@@ -206,6 +225,29 @@ const styles = StyleSheet.create({
     backgroundColor: '#6c63ff',
   },
   actionText: {
+    color: '#ffffff',
+    fontWeight: '800',
+  },
+  toast: {
+    position: 'absolute',
+    bottom: 24,
+    left: 16,
+    right: 16,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+  },
+  toastInfo: {
+    backgroundColor: '#111827',
+  },
+  toastSuccess: {
+    backgroundColor: '#16a34a',
+  },
+  toastError: {
+    backgroundColor: '#dc2626',
+  },
+  toastText: {
     color: '#ffffff',
     fontWeight: '800',
   },
