@@ -20,4 +20,9 @@ router.put('/jobs/:id/applicants/:applicantId/undo', recruiter.undoApplicant)
 // --------------- Dashboard -------------
 router.get('/recruiter/:id/dashboard', recruiter.getDashboard)
 
+// --------------- Company ----------------
+router.get('/recruiter/:id/company', recruiter.getCompanyProfile)
+router.put('/recruiter/:id/company', recruiter.upsertCompanyProfile)
+router.get('/recruiter/:id/company/insights', recruiter.getCompanyInsights)
+
 module.exports = router
