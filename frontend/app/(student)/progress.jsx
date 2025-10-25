@@ -8,6 +8,7 @@ import { themes } from '../../constants/colors'
 import { getSession } from '../../lib/session'
 import { useFocusEffect } from '@react-navigation/native'
 import { ProgressChart } from 'react-native-chart-kit'
+import { router } from 'expo-router'
 
 export default function ProgressScreen() {
   const scheme = useColorScheme()
@@ -74,8 +75,14 @@ export default function ProgressScreen() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: theme.background }} contentContainerStyle={styles.container}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: theme.background }}
+      contentContainerStyle={[styles.container, { paddingTop: (Constants?.statusBarHeight || 0) + 8 }]}
+    >
       <View style={styles.headerRow}>
+        <TouchableOpacity onPress={() => router.push('/(student)/courses')} style={[styles.backBtn, { borderColor: theme.border, backgroundColor: theme.surface }]}>
+          <Ionicons name="chevron-back" size={18} color={theme.text} />
+        </TouchableOpacity>
         <Text style={[styles.header, { color: theme.text }]}>Progress</Text>
         <TouchableOpacity onPress={fetchPurchases} disabled={loading} style={[styles.refreshBtn, { borderColor: theme.border, backgroundColor: theme.surface }]}>
           <Ionicons name="refresh" size={16} color={theme.text} />
@@ -127,16 +134,38 @@ export default function ProgressScreen() {
 
 const styles = StyleSheet.create({
   container: { padding: 16, paddingBottom: 40 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   header: { fontSize: 20, fontWeight: '800' },
   loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  refreshBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
+  backBtn: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 6 },
+  refreshBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
   refreshText: { fontSize: 12, fontWeight: '700' },
-  list: { gap: 10, marginTop: 12 },
-  todoItem: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 12, padding: 12 },
+  list: { gap: 12, marginTop: 12 },
+  todoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 6,
+    elevation: 1,
+  },
   checkbox: { width: 26, height: 26, borderRadius: 6, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   todoTitle: { fontSize: 15, fontWeight: '800' },
   todoMeta: { fontSize: 12, marginTop: 2 },
-  card: { borderWidth: 1, borderRadius: 14, padding: 12 },
+  card: {
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 8,
+    elevation: 2,
+  },
   progressLabel: { fontSize: 12, marginBottom: 8 },
 })
