@@ -25,7 +25,8 @@
         "foregroundImage": "./assets/logo/logo_dark.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.ramzyhafeel.frontend"
     },
     "web": {
       "favicon": "./assets/logo/logo_light.png"
