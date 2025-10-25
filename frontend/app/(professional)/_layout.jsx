@@ -1,11 +1,6 @@
- HEAD
 import React, { useEffect, useMemo, useState } from 'react'
 import { router, Tabs } from 'expo-router'
 import { useColorScheme, View, Text } from 'react-native'
-
-import React, { useEffect, useState } from 'react'
-import { Tabs, router } from 'expo-router'
-import { useColorScheme, View } from 'react-native'
 
 import { getSession } from '../../lib/session'
 import { themes } from '../../constants/colors'
