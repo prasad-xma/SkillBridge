@@ -139,7 +139,12 @@ export default function StudentProfile() {
     >
       <LinearGradient colors={[theme.heroFrom, theme.heroTo]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
         <View style={styles.heroGlow} />
-        <Text style={styles.heroTitle}>Profile</Text>
+        <View style={styles.headerTopRow}>
+          <Text style={styles.heroTitle}>Profile</Text>
+          <TouchableOpacity style={styles.headerActionBtn} onPress={onLogout} activeOpacity={0.85}>
+            <Text style={styles.headerActionText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
         <Text style={styles.heroSub}>Your account information</Text>
       </LinearGradient>
 
@@ -223,6 +228,9 @@ const createStyles = (theme) =>
     heroGlow: { position: 'absolute', bottom: -110, right: -90, width: 240, height: 240, backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 9999 },
     heroTitle: { fontSize: 26, fontWeight: '700', color: theme.headerText },
     heroSub: { marginTop: 6, fontSize: 14, color: theme.headerText, opacity: 0.88 },
+    headerTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    headerActionBtn: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.18)' },
+    headerActionText: { color: theme.headerText, fontWeight: '700' },
     card: { borderWidth: 1, borderColor: theme.border, backgroundColor: theme.card, borderRadius: 22, padding: 20, shadowColor: theme.toastShadow, shadowOpacity: 1, shadowRadius: 12, shadowOffset: { width: 0, height: 8 }, elevation: 3 },
     cardGlass: { backgroundColor: theme.surface },
     cardAccent: { borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface, borderRadius: 22, padding: 20, gap: 12, shadowColor: theme.toastShadow, shadowOpacity: 1, shadowRadius: 10, shadowOffset: { width: 0, height: 6 }, elevation: 2 },
