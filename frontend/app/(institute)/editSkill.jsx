@@ -7,6 +7,8 @@ import {
   FlatList,
   StyleSheet,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
   useColorScheme,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -93,7 +95,7 @@ export default function EditSkill({ route, navigation }) {
       const token = session?.idToken;
  
       const response = await fetch(
-        `http://192.168.1.4:5000/skills/update/${skillId}`,
+        `http://192.168.1.3:5000/skills/update/${skillId}`,
         {
           method: "PUT",
           headers: {
@@ -133,7 +135,7 @@ export default function EditSkill({ route, navigation }) {
   };
 
   const renderPrerequisite = ({ item, index }) => (
-    <View style={styles.listItem}>
+    <View style={[styles.listItem,{borderColor: theme.border, backgroundColor: theme.card}]}>
       <Text style={{ color: theme.text, flex: 1 }}>{item}</Text>
       <TouchableOpacity onPress={() => removePrerequisite(index)}>
         <Ionicons name="trash-outline" size={20} color="#ff4d4f" />
@@ -142,7 +144,7 @@ export default function EditSkill({ route, navigation }) {
   );
 
   const renderLearningOutcome = ({ item, index }) => (
-    <View style={styles.listItem}>
+    <View style={[styles.listItem,{borderColor: theme.border, backgroundColor: theme.card}]}>
       <Text style={{ color: theme.text, flex: 1 }}>{item}</Text>
       <TouchableOpacity onPress={() => removeLearningOutcome(index)}>
         <Ionicons name="trash-outline" size={20} color="#ff4d4f" />
@@ -151,11 +153,15 @@ export default function EditSkill({ route, navigation }) {
   );
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView
+        style={[styles.container, { backgroundColor: theme.background }]}
+        contentContainerStyle={{ paddingBottom: 24 }}
+      >
       <Text style={[styles.title, { color: theme.text }]}>Edit Skill</Text>
 
       <TextInput
-        style={[styles.input, { color: theme.text, borderColor: theme.border }]}
+        style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.card }]}
         placeholder="Skill Name"
         placeholderTextColor={theme.placeholder}
         value={skillName}
@@ -163,7 +169,7 @@ export default function EditSkill({ route, navigation }) {
       />
 
       <TextInput
-        style={[styles.textarea, { color: theme.text, borderColor: theme.border }]}
+        style={[styles.textarea, { color: theme.text, borderColor: theme.border, backgroundColor: theme.card }]}
         placeholder="Description"
         placeholderTextColor={theme.placeholder}
         value={description}
@@ -222,7 +228,7 @@ export default function EditSkill({ route, navigation }) {
       </View>
 
       <TextInput
-        style={[styles.input, { color: theme.text, borderColor: theme.border }]}
+        style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.card }]}
         placeholder="Duration (e.g. 4 weeks, 2 months)"
         placeholderTextColor={theme.placeholder}
         value={duration}
@@ -236,10 +242,10 @@ export default function EditSkill({ route, navigation }) {
           <TextInput
             style={[
               styles.input,
-              { flex: 1, color: theme.text, borderColor: theme.border, marginRight: 8 },
+              { flex: 1, color: theme.text, borderColor: theme.border, backgroundColor: theme.card, marginRight: 8 },
             ]}
             placeholder="Add Prerequisite"
-            placeholderTextColor={theme.placeholder}
+            placeholderTextColor={theme.text}
             value={prerequisiteInput}
             onChangeText={setPrerequisiteInput}
           />
@@ -263,10 +269,10 @@ export default function EditSkill({ route, navigation }) {
           <TextInput
             style={[
               styles.input,
-              { flex: 1, color: theme.text, borderColor: theme.border, marginRight: 8 },
+              { flex: 1, color: theme.text, borderColor: theme.border,backgroundColor: theme.card, marginRight: 8 },
             ]}
             placeholder="Add Learning Outcome"
-            placeholderTextColor={theme.placeholder}
+            placeholderTextColor={theme.text}
             value={outcomeInput}
             onChangeText={setOutcomeInput}
           />
@@ -290,12 +296,13 @@ export default function EditSkill({ route, navigation }) {
       >
         <Text style={styles.submitText}>{loading ? "Saving..." : "Save Changes"}</Text>
       </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
+  container: { flex: 1, padding: 20 },
   title: { fontSize: 22, fontWeight: "700", marginBottom: 20, textAlign: "center" },
   input: {
     borderWidth: 1,
@@ -303,8 +310,6 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
     fontSize: 16,
-    backgroundColor: "#fff",
-    borderColor: "#ccc",
   },
   textarea: {
     borderWidth: 1,
@@ -315,8 +320,6 @@ const styles = StyleSheet.create({
     minHeight: 120,
     maxHeight: 200,
     textAlignVertical: "top",
-    backgroundColor: "#fff",
-    borderColor: "#ccc",
   },
   sectionContainer: {
     marginBottom: 20,
@@ -367,10 +370,10 @@ const styles = StyleSheet.create({
   submitBtn: {
     backgroundColor: "#28a745",
     padding: 14,
+    paddingBottom: 20,
     borderRadius: 8,
     alignItems: "center",
     marginTop: 10,
-    marginBottom: 20,
   },
   submitText: { color: "#fff", fontSize: 16, fontWeight: "600" },
 });

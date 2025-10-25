@@ -42,6 +42,9 @@ app.use('/api', recommendRoutes);
 const chatRoutes = require('./routes/chatRoutes');
 app.use('/api/chat', chatRoutes);
 
+// Register purchase routes
+const purchaseRoutes = require('./routes/purchaseRoutes');
+app.use('/api/purchases', purchaseRoutes);
 
 // -------------------- server setup -------------------- //
 const PORT = process.env.PORT || 5000;

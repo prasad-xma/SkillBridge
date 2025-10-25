@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { themes } from "../../constants/colors";
 import { getSession } from "../../lib/session";
+import { API_BASE as ENV_API_BASE } from "@env";
 
 export default function EditCourse({ route, navigation }) {
   const router = useRouter();
@@ -107,7 +108,7 @@ export default function EditCourse({ route, navigation }) {
       const token = session?.idToken;
  
       const response = await fetch(
-        `http://192.168.1.4:5000/courses/update/${courseId}`,
+        `${ENV_API_BASE}/courses/update/${courseId}`,
         {
           method: "PUT",
           headers: {
@@ -148,11 +149,14 @@ export default function EditCourse({ route, navigation }) {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.background }]}
+      contentContainerStyle={{ paddingBottom: 24 }}
+    >
       <Text style={[styles.title, { color: theme.text }]}>Edit Course</Text>
 
       <TextInput
-        style={[styles.input, { color: theme.text, borderColor: theme.border }]}
+        style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.card }]}
         placeholder="Course Name"
         placeholderTextColor={theme.placeholder}
         value={courseName}
@@ -160,7 +164,7 @@ export default function EditCourse({ route, navigation }) {
       />
 
       <TextInput
-        style={[styles.textarea, { color: theme.text, borderColor: theme.border }]}
+        style={[styles.textarea, { color: theme.text, borderColor: theme.border, backgroundColor: theme.card }]}
         placeholder="Description"
         placeholderTextColor={theme.placeholder}
         value={description}
@@ -219,7 +223,7 @@ export default function EditCourse({ route, navigation }) {
       </View>
 
       <TextInput
-        style={[styles.input, { color: theme.text, borderColor: theme.border }]}
+        style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.card }]}
         placeholder="Duration (e.g. 6 weeks)"
         placeholderTextColor={theme.placeholder}
         value={duration}
@@ -227,7 +231,7 @@ export default function EditCourse({ route, navigation }) {
       />
 
       <TextInput
-        style={[styles.input, { color: theme.text, borderColor: theme.border }]}
+        style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.card }]}
         placeholder="Course Fees"
         placeholderTextColor={theme.placeholder}
         value={fees}
@@ -240,10 +244,10 @@ export default function EditCourse({ route, navigation }) {
         <TextInput
           style={[
             styles.input,
-            { flex: 1, color: theme.text, borderColor: theme.border, marginRight: 8 },
+            { flex: 1, color: theme.text, borderColor: theme.border, backgroundColor: theme.card, marginRight: 8 },
           ]}
           placeholder="Add Chapter"
-          placeholderTextColor={theme.placeholder}
+          placeholderTextColor={theme.text}
           value={chapterInput}
           onChangeText={setChapterInput}
         />
@@ -253,18 +257,16 @@ export default function EditCourse({ route, navigation }) {
       </View>
 
       {/* Display Chapters */}
-      <FlatList
-        data={chapters}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={({ item, index }) => (
-          <View style={styles.chapterItem}>
-            <Text style={{ color: theme.text }}>{item}</Text>
+      <View>
+        {chapters.map((item, index) => (
+          <View key={`${index}`} style={[styles.chapterItem,{borderColor: theme.border, backgroundColor: theme.card}]}>
+            <Text style={{ color: theme.text}}>{item}</Text>
             <TouchableOpacity onPress={() => removeChapter(index)}>
               <Ionicons name="trash-outline" size={20} color="#ff4d4f" />
             </TouchableOpacity>
           </View>
-        )}
-      />
+        ))}
+      </View>
 
       {/* Learning Outcomes Input */}
       <View style={styles.sectionContainer}>
@@ -273,10 +275,10 @@ export default function EditCourse({ route, navigation }) {
           <TextInput
             style={[
               styles.input,
-              { flex: 1, color: theme.text, borderColor: theme.border, marginRight: 8 },
+              { flex: 1, color: theme.text, borderColor: theme.border, backgroundColor: theme.card, marginRight: 8 },
             ]}
             placeholder="Add Learning Outcome"
-            placeholderTextColor={theme.placeholder}
+            placeholderTextColor={theme.text}
             value={outcomeInput}
             onChangeText={setOutcomeInput}
           />
@@ -285,19 +287,16 @@ export default function EditCourse({ route, navigation }) {
           </TouchableOpacity>
         </View>
 
-        <FlatList
-          data={learningOutcomes}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item, index }) => (
-            <View style={styles.chapterItem}>
+        <View>
+          {learningOutcomes.map((item, index) => (
+            <View key={`${index}`} style={[styles.chapterItem,{borderColor: theme.border, backgroundColor: theme.card}]}>
               <Text style={{ color: theme.text, flex: 1 }}>{item}</Text>
               <TouchableOpacity onPress={() => removeLearningOutcome(index)}>
                 <Ionicons name="trash-outline" size={20} color="#ff4d4f" />
               </TouchableOpacity>
             </View>
-          )}
-          scrollEnabled={false}
-        />
+          ))}
+        </View>
       </View>
 
       <TouchableOpacity
@@ -312,7 +311,7 @@ export default function EditCourse({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
+  container: { flex: 1, padding: 20 },
   title: { fontSize: 22, fontWeight: "700", marginBottom: 20, textAlign: "center" },
   input: {
     borderWidth: 1,
@@ -320,8 +319,6 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
     fontSize: 16,
-    backgroundColor: "#fff",
-    borderColor: "#ccc",
   },
   textarea: {
     borderWidth: 1,
@@ -332,8 +329,6 @@ const styles = StyleSheet.create({
     minHeight: 120,
     maxHeight: 200,
     textAlignVertical: "top",
-    backgroundColor: "#fff",
-    borderColor: "#ccc",
   },
   addBtn: {
     justifyContent: "center",
@@ -384,6 +379,7 @@ const styles = StyleSheet.create({
   submitBtn: {
     backgroundColor: "#28a745",
     padding: 14,
+    paddingBottom: 20,
     borderRadius: 8,
     alignItems: "center",
     marginTop: 10,

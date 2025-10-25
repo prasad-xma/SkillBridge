@@ -3,11 +3,13 @@ import { View, Text, StyleSheet, TouchableOpacity, useColorScheme } from 'react-
 import { themes } from '../../constants/colors'
 import { getSession, clearSession } from '../../lib/session'
 import { router } from 'expo-router'
+import { useFocusEffect } from '@react-navigation/native'
 
 export default function RecruiterProfile() {
   const scheme = useColorScheme()
   const theme = scheme === 'dark' ? themes.dark : themes.light
   const [user, setUser] = useState(null)
+  const [profileData, setProfileData] = useState(null)
 
   useEffect(() => {
     (async () => {
@@ -17,8 +19,21 @@ export default function RecruiterProfile() {
         return
       }
       setUser(session)
+      setProfileData(null)
     })()
   }, [])
+
+  useFocusEffect(
+    React.useCallback(() => {
+      (async () => {
+        const session = await getSession()
+        if (!session) return
+        setUser(session)
+        setProfileData(null)
+      })()
+      return () => {}
+    }, [])
+  )
 
   const onLogout = async () => {
     await clearSession()
@@ -46,6 +61,7 @@ export default function RecruiterProfile() {
   }
 
   const profile = user?.profile || {}
+  const fullName = user?.fullName
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -54,7 +70,7 @@ export default function RecruiterProfile() {
           <Text style={[styles.avatarText, { color: theme.tint }]}>{initials}</Text>
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.name, { color: theme.text }]}>{user?.fullName || 'Recruiter'}</Text>
+          <Text style={[styles.name, { color: theme.text }]}>{fullName || 'Recruiter'}</Text>
           <Text style={[styles.email, { color: theme.textSecondary }]}>{user?.email || '—'}</Text>
           {user?.role ? (
             <View style={[styles.roleChip, { borderColor: theme.accent + '66', backgroundColor: theme.accent + '14' }]}>
@@ -76,6 +92,7 @@ export default function RecruiterProfile() {
             <Text style={[styles.sectionTitle, { color: theme.text }]}>Profile</Text>
             <View style={styles.divider} />
             {Object.entries(profile).map(([key, val]) => {
+              if (key === 'contactNumber') return null
               const value = Array.isArray(val) ? val.filter(Boolean) : val
               if (Array.isArray(value) && value.length > 0) {
                 return (
@@ -102,9 +119,14 @@ export default function RecruiterProfile() {
         ) : null}
       </View>
 
-      <TouchableOpacity style={[styles.button, { backgroundColor: theme.primary }]} onPress={onLogout}>
-        <Text style={{ color: '#fff', fontWeight: '700' }}>Logout</Text>
-      </TouchableOpacity>
+      <View style={{ flexDirection: 'row', gap: 10 }}>
+        <TouchableOpacity style={[styles.button, { backgroundColor: '#3b82f6', flex: 1 }]} onPress={() => router.push('/(recruiter)/edit-profile')}>
+          <Text style={{ color: '#fff', fontWeight: '700', textAlign: 'center' }}>Edit Profile</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.button, { backgroundColor: theme.primary, flex: 1 }]} onPress={onLogout}>
+          <Text style={{ color: '#fff', fontWeight: '700', textAlign: 'center' }}>Logout</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   )
 }

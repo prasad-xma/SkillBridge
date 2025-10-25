@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { View, Text, StyleSheet, useColorScheme, FlatList, TouchableOpacity, ScrollView, Alert, Modal } from 'react-native'
+import { View, Text, StyleSheet, useColorScheme, FlatList, TouchableOpacity, ScrollView, Modal, Linking } from 'react-native'
 import { themes } from '../../constants/colors'
 import { getSession } from '../../lib/session'
 import { router } from 'expo-router'
@@ -18,6 +18,14 @@ export default function RecruiterJobs() {
   const [applicantsRaw, setApplicantsRaw] = useState([])
   const [viewing, setViewing] = useState(null)
   const [dismissedRejected, setDismissedRejected] = useState({})
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'info' })
+
+  const showToast = (message, type = 'info', duration = 2500) => {
+    setToast({ visible: true, message, type })
+    if (duration > 0) {
+      setTimeout(() => setToast((t) => ({ ...t, visible: false })), duration)
+    }
+  }
 
   const applicants = useMemo(() => {
     const base = applicantsRaw
@@ -44,7 +52,7 @@ export default function RecruiterJobs() {
     try {
       const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE
       if (!API_BASE) {
-        Alert.alert('Configuration error', 'API_BASE is not set. Add it to frontend/.env or app.json')
+        showToast('API_BASE is not set. Configure in frontend/.env or app.json', 'error')
         return
       }
       const url = `${API_BASE}/api/recruiter/jobs`
@@ -54,18 +62,24 @@ export default function RecruiterJobs() {
       setJobs(list)
     } catch (e) {
       console.warn('[Recruiter] fetchJobs error', e?.response?.data || e?.message)
-      Alert.alert('Failed to fetch jobs', e?.response?.data?.message || e?.message || 'Network error')
+      showToast(e?.response?.data?.message || e?.message || 'Failed to fetch jobs', 'error')
     }
   }
 
   const deleteJob = async (jobId) => {
     try {
       const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE
+      if (!API_BASE) {
+        showToast('API_BASE is not set. Configure in frontend/.env or app.json', 'error')
+        return
+      }
+      showToast('Deleting job...', 'info', 1200)
       await axios.delete(`${API_BASE}/api/recruiter/jobs/${jobId}`)
       const session = await getSession()
       if (session?.uid) await fetchJobs(session.uid)
+      showToast('Job deleted', 'success')
     } catch (e) {
-      Alert.alert('Error', e?.response?.data?.message || e?.message || 'Failed to delete job')
+      showToast(e?.response?.data?.message || e?.message || 'Failed to delete job', 'error')
     }
   }
 
@@ -86,17 +100,69 @@ export default function RecruiterJobs() {
       try {
         const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE
         if (!API_BASE) {
-          Alert.alert('Configuration error', 'API_BASE is not set. Add it to frontend/.env or app.json')
+          showToast('API_BASE is not set. Configure in frontend/.env or app.json', 'error')
           return
         }
         const url = `${API_BASE}/api/recruiter/jobs/${selectedJob.id}/applicants`
         console.log('[Recruiter] GET', url)
         const resp = await axios.get(url)
         const arr = Array.isArray(resp.data) ? resp.data : []
-        setApplicantsRaw(arr)
+        const normalize = (a) => {
+          const id = a.id || a.applicantId || a.userId || a.uid || `${a.email || a?.applicant?.email || ''}-${a.jobId || selectedJob.id}`
+          const applicantObj = a.applicant || a.candidate || {}
+          const name = a.name || a.applicantName || applicantObj.name || a.fullName || a.username
+          const email = a.email || a.applicantEmail || applicantObj.email
+          const phone = a.phone || a.mobile || applicantObj.phone
+          const location = a.location || a.city || applicantObj.location
+          const education = a.education || a.qualification || applicantObj.education
+          const experienceYears = a.experienceYears ?? a.experience ?? applicantObj.experienceYears ?? applicantObj.experience
+          const expectedSalary = a.expectedSalary || applicantObj.expectedSalary
+          const skillsRaw = a.applicantSkills || applicantObj.skills || a.skills || a.candidateSkills
+          const skills = Array.isArray(skillsRaw)
+            ? skillsRaw
+            : typeof skillsRaw === 'string'
+            ? skillsRaw.split(',').map(s => s.trim()).filter(Boolean)
+            : []
+          let match = a.matchPercentage ?? a.match ?? a.matchScore ?? a.similarity
+          if (typeof match === 'string') {
+            const m = parseFloat(match)
+            match = Number.isFinite(m) ? m : undefined
+          }
+          if (match != null && match <= 1) match = Math.round(match * 100)
+          if (match != null && match > 1 && match <= 100) match = Math.round(match)
+          // Compute match from CV text if not provided
+          if (match == null || !Number.isFinite(match)) {
+            const jobSkillsRaw = selectedJob?.skills || selectedJob?.requiredSkills || selectedJob?.jobSkills || selectedJob?.tags
+            const jobSkills = Array.isArray(jobSkillsRaw)
+              ? jobSkillsRaw
+              : typeof jobSkillsRaw === 'string'
+              ? jobSkillsRaw.split(',').map(s => s.trim()).filter(Boolean)
+              : []
+            const cvTextRaw = a.cvDescription || a.cvDetails || a.cv || a.resumeText || a.coverLetter || applicantObj.cvDescription || applicantObj.cv
+            if (jobSkills.length && typeof cvTextRaw === 'string' && cvTextRaw.trim().length) {
+              const cvLower = cvTextRaw.toLowerCase()
+              let hits = 0
+              for (const sk of jobSkills) {
+                const s = String(sk).toLowerCase().trim()
+                if (!s) continue
+                // simple containment check; could be improved with regex word-boundaries
+                if (cvLower.includes(s)) hits += 1
+              }
+              match = Math.round((hits / jobSkills.length) * 100)
+            }
+          }
+          if (match == null || !Number.isFinite(match)) match = 0
+          const resumeUrl = a.resumeUrl || a.resume || applicantObj.resumeUrl
+          const portfolioUrl = a.portfolioUrl || applicantObj.portfolioUrl
+          const linkedin = a.linkedin || applicantObj.linkedin
+          const github = a.github || applicantObj.github
+          const status = a.status
+          return { id, name, email, phone, location, education, experienceYears, expectedSalary, skills, matchPercentage: match, resumeUrl, portfolioUrl, linkedin, github, status }
+        }
+        setApplicantsRaw(arr.map(normalize))
       } catch (e) {
         console.warn('[Recruiter] load applicants error', e?.response?.data || e?.message)
-        Alert.alert('Failed to fetch applicants', e?.response?.data?.message || e?.message || 'Network error')
+        showToast(e?.response?.data?.message || e?.message || 'Failed to fetch applicants', 'error')
       }
     })()
   }, [selectedJob])
@@ -105,7 +171,7 @@ export default function RecruiterJobs() {
     try {
       const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE
       if (!API_BASE) {
-        Alert.alert('Configuration error', 'API_BASE is not set. Add it to frontend/.env or app.json')
+        showToast('API_BASE is not set. Configure in frontend/.env or app.json', 'error')
         return
       }
       const url = `${API_BASE}/api/recruiter/jobs/${jobId}/applicants/${applicantId}/${action}`
@@ -132,7 +198,7 @@ export default function RecruiterJobs() {
       }
     } catch (e) {
       console.warn('[Recruiter] updateApplicant error', e?.response?.data || e?.message)
-      Alert.alert('Failed to update applicant', e?.response?.data?.message || e?.message || `Failed to ${action}`)
+      showToast(e?.response?.data?.message || e?.message || `Failed to ${action}`, 'error')
     }
   }
 
@@ -144,7 +210,7 @@ export default function RecruiterJobs() {
       <View style={[styles.headerBar, { borderColor: theme.border }]}> 
         <Text style={[styles.headerTitle, { color: theme.text }]}>Jobs</Text>
         <TouchableOpacity onPress={() => router.push('/(recruiter)/post-job')} style={[styles.postBtn, { borderColor: theme.border }]}> 
-          <Text style={{ color: theme.text }}>Post Job</Text>
+          <Text style={{ color: '#ffffff', fontWeight: '700' }}>Post Job</Text>
         </TouchableOpacity>
       </View>
 
@@ -152,26 +218,21 @@ export default function RecruiterJobs() {
       {!selectedJob ? (
         <ScrollView contentContainerStyle={{ padding: 16 }}>
           {jobs.map((job) => (
-            <View key={job.id} style={[styles.jobCard, { backgroundColor: theme.card, borderColor: theme.border }]}> 
+            <View key={job.id} style={[styles.jobCard, styles.cardShadow, { backgroundColor: theme.card, borderColor: theme.border }]}> 
               <View style={{ flex: 1 }}>
                 <Text style={[styles.jobTitle, { color: theme.text }]}>{job.title}</Text>
                 <Text style={{ color: theme.textSecondary }}>{job.applicantsCount ?? '-'} applicants</Text>
               </View>
               <View style={{ gap: 8, alignItems: 'flex-end' }}>
                 <TouchableOpacity onPress={() => setSelectedJob(job)} style={[styles.statusBtn, { borderColor: theme.border }]}> 
-                  <Text style={{ color: theme.text }}>Check Status</Text>
+                  <Text style={{ color: '#ffffff' }}>Check Status</Text>
                 </TouchableOpacity>
                 <View style={styles.cardActionsRow}>
-                  <TouchableOpacity style={[styles.smallBtn, styles.editBtn]} onPress={() => router.push({ pathname: '/(recruiter)/edit-job', params: { id: job.id } })}>
-                    <Text style={styles.smallBtnText}>Edit</Text>
+                  <TouchableOpacity style={[styles.actionBtn, styles.shortlist]} onPress={() => router.push({ pathname: '/(recruiter)/edit-job', params: { id: job.id } })}>
+                    <Text style={styles.actionText}>Edit</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.smallBtn, styles.deleteBtn]} onPress={() => {
-                    Alert.alert('Delete Job', 'Are you sure you want to delete this job?', [
-                      { text: 'Cancel', style: 'cancel' },
-                      { text: 'Delete', style: 'destructive', onPress: () => deleteJob(job.id) },
-                    ])
-                  }}>
-                    <Text style={styles.smallBtnText}>Delete</Text>
+                  <TouchableOpacity style={[styles.actionBtn, styles.reject]} onPress={() => deleteJob(job.id)}>
+                    <Text style={styles.actionText}>Delete</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -192,7 +253,7 @@ export default function RecruiterJobs() {
           <View style={[styles.tabs, { borderColor: theme.border }]}> 
             {['All', 'Shortlisted', 'Hired', 'Rejected'].map(t => (
               <TouchableOpacity key={t} onPress={() => setTab(t)} style={[styles.tabItem, tab === t && styles.tabItemActive]}> 
-                <Text style={{ color: tab === t ? '#111827' : theme.textSecondary, fontWeight: tab === t ? '700' : '600' }}>{t}</Text>
+                <Text style={{ color: tab === t ? '#ffffff' : theme.textSecondary, fontWeight: tab === t ? '700' : '600' }}>{t}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -203,13 +264,22 @@ export default function RecruiterJobs() {
             data={applicants}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-              <View style={[styles.applicantCard, { backgroundColor: theme.card, borderColor: theme.border }]}> 
+              <View style={[styles.applicantCard, styles.cardShadow, { backgroundColor: theme.card, borderColor: theme.border }]}> 
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.applicantName, { color: theme.text }]}>{item.name}</Text>
                   <Text style={{ color: theme.textSecondary, marginTop: 4 }}>Skills: {Array.isArray(item.skills) ? item.skills.join(', ') : item.skills}</Text>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
-                  <View style={styles.matchPill}><Text style={styles.matchText}>{item.matchPercentage ?? item.match ?? '-' }%</Text></View>
+                  {(() => {
+                    const pct = Number(item.matchPercentage ?? item.match ?? 0) || 0
+                    const bg = pct >= 80 ? '#dcfce7' : pct >= 60 ? '#fef9c3' : '#fee2e2'
+                    const fg = pct >= 80 ? '#166534' : pct >= 60 ? '#92400e' : '#991b1b'
+                    return (
+                      <View style={[styles.matchPill, { backgroundColor: bg }]}>
+                        <Text style={[styles.matchText, { color: fg }]}>{pct}%</Text>
+                      </View>
+                    )
+                  })()}
                   <View style={styles.actionsRow}>
                     {/* Always allow viewing */}
                     <TouchableOpacity style={[styles.actionBtn, styles.viewBtn]} onPress={() => setViewing(item)}><Text style={styles.viewText}>View</Text></TouchableOpacity>
@@ -245,8 +315,55 @@ export default function RecruiterJobs() {
               <View style={{ width: '88%', borderRadius: 12, padding: 16, backgroundColor: theme.card, borderWidth: 1, borderColor: theme.border }}>
                 <Text style={{ fontSize: 16, fontWeight: '800', color: theme.text }}>{viewing?.name || 'Applicant'}</Text>
                 <Text style={{ marginTop: 8, color: theme.textSecondary }}>Email: {viewing?.email || '-'}</Text>
+                {viewing?.phone || viewing?.mobile ? (
+                  <Text style={{ marginTop: 4, color: theme.textSecondary }}>Phone: {viewing?.phone || viewing?.mobile}</Text>
+                ) : null}
+                {viewing?.location || viewing?.city ? (
+                  <Text style={{ marginTop: 4, color: theme.textSecondary }}>Location: {viewing?.location || viewing?.city}</Text>
+                ) : null}
+                {viewing?.education || viewing?.qualification ? (
+                  <Text style={{ marginTop: 4, color: theme.textSecondary }}>Education: {viewing?.education || viewing?.qualification}</Text>
+                ) : null}
+                {viewing?.experienceYears != null || viewing?.experience != null ? (
+                  <Text style={{ marginTop: 4, color: theme.textSecondary }}>Experience: {viewing?.experienceYears ?? viewing?.experience} years</Text>
+                ) : null}
+                {viewing?.expectedSalary ? (
+                  <Text style={{ marginTop: 4, color: theme.textSecondary }}>Expected Salary: {viewing?.expectedSalary}</Text>
+                ) : null}
                 <Text style={{ marginTop: 4, color: theme.textSecondary }}>Skills: {Array.isArray(viewing?.skills) ? viewing?.skills?.join(', ') : viewing?.skills || '-'}</Text>
                 <Text style={{ marginTop: 4, color: theme.textSecondary }}>Match: {viewing?.matchPercentage ?? viewing?.match ?? '-'}%</Text>
+                {viewing?.resumeUrl ? (
+                  <Text
+                    style={{ marginTop: 8, color: '#3b82f6', fontWeight: '700' }}
+                    onPress={() => Linking.openURL(viewing?.resumeUrl)}
+                  >
+                    Open Resume
+                  </Text>
+                ) : null}
+                {viewing?.portfolioUrl ? (
+                  <Text
+                    style={{ marginTop: 6, color: '#3b82f6', fontWeight: '700' }}
+                    onPress={() => Linking.openURL(viewing?.portfolioUrl)}
+                  >
+                    Portfolio
+                  </Text>
+                ) : null}
+                {viewing?.linkedin ? (
+                  <Text
+                    style={{ marginTop: 6, color: '#3b82f6', fontWeight: '700' }}
+                    onPress={() => Linking.openURL(viewing?.linkedin)}
+                  >
+                    LinkedIn
+                  </Text>
+                ) : null}
+                {viewing?.github ? (
+                  <Text
+                    style={{ marginTop: 6, color: '#3b82f6', fontWeight: '700' }}
+                    onPress={() => Linking.openURL(viewing?.github)}
+                  >
+                    GitHub
+                  </Text>
+                ) : null}
                 <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16 }}>
                   <TouchableOpacity onPress={() => setViewing(null)} style={{ paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, backgroundColor: '#111827' }}>
                     <Text style={{ color: '#ffffff', fontWeight: '700' }}>Close</Text>
@@ -255,6 +372,12 @@ export default function RecruiterJobs() {
               </View>
             </View>
           </Modal>
+        </View>
+      )}
+      {/* Toast */}
+      {toast.visible && (
+        <View style={[styles.toast, toast.type === 'error' ? styles.toastError : toast.type === 'success' ? styles.toastSuccess : styles.toastInfo]}>
+          <Text style={styles.toastText}>{toast.message}</Text>
         </View>
       )}
     </View>
@@ -271,6 +394,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  toast: {
+    position: 'absolute',
+    bottom: 24,
+    left: 16,
+    right: 16,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+  },
+  toastInfo: {
+    backgroundColor: '#111827',
+  },
+  toastSuccess: {
+    backgroundColor: '#16a34a',
+  },
+  toastError: {
+    backgroundColor: '#dc2626',
+  },
+  toastText: {
+    color: '#ffffff',
+    fontWeight: '700',
+  },
   headerTitle: {
     fontSize: 18,
     fontWeight: '800',
@@ -280,6 +426,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
+    backgroundColor: '#2563eb',
   },
   jobCard: {
     borderRadius: 12,
@@ -291,7 +438,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   jobTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
   },
   statusBtn: {
@@ -299,6 +446,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
+    backgroundColor: '#111827',
   },
   selectedHeader: {
     paddingHorizontal: 16,
@@ -331,7 +479,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#e5e7eb',
   },
   tabItemActive: {
-    backgroundColor: '#c7d2fe',
+    backgroundColor: '#111827',
   },
   applicantCard: {
     borderRadius: 12,
@@ -341,6 +489,13 @@ const styles = StyleSheet.create({
     gap: 12,
     alignItems: 'center',
     marginBottom: 12,
+  },
+  cardShadow: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   applicantName: {
     fontSize: 15,
@@ -364,10 +519,21 @@ const styles = StyleSheet.create({
     marginTop: 8,
     flexWrap: 'wrap',
   },
+  smallBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+  },
   actionBtn: {
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 8,
+  },
+  editBtn: {
+    backgroundColor: '#10b981',
+  },
+  deleteBtn: {
+    backgroundColor: '#ef4444',
   },
   viewBtn: {
     backgroundColor: '#3b82f6',

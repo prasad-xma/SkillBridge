@@ -16,6 +16,7 @@ import {
   TextInput,
 } from "react-native";
 import { themes } from "../../constants/colors";
+import { API_BASE as ENV_API_BASE } from "@env";
 import { getSession } from "../../lib/session";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
@@ -37,7 +38,7 @@ export default function InstituteHome() {
     try {
       setError(null);
       setLoading(true);
-      const response = await fetch("http://192.168.1.4:5000/courses");
+      const response = await fetch(`${ENV_API_BASE}/courses`);
       const data = await response.json();
       if (response.ok) setCourses(data);
       else setError(data?.message || "Failed to load courses");
@@ -51,7 +52,7 @@ export default function InstituteHome() {
 
   const loadSkills = async () => {
     try {
-      const res = await fetch("http://192.168.1.4:5000/skills");
+      const res = await fetch(`${ENV_API_BASE}/skills`);
       const data = await res.json();
       if (res.ok) setSkills(Array.isArray(data) ? data : []);
     } catch (e) {
@@ -93,11 +94,11 @@ export default function InstituteHome() {
     try {
       router.push({
         pathname: "/(institute)/courseDetails",
-        params: { course: JSON.stringify(course) },
+        params: { id: String(course.id || course._id || ""), course: JSON.stringify(course) },
       });
     } catch (e) {
       // fallback to react-navigation if available
-      navigation?.navigate?.("courseDetails", { course });
+      navigation?.navigate?.("courseDetails", { id: course.id || course._id, course });
     }
   };
 
@@ -117,7 +118,7 @@ export default function InstituteHome() {
               const courseId = course.id || course._id; // Use id field from backend
 
               const response = await fetch(
-                `http://192.168.1.4:5000/courses/delete/${courseId}`,
+                `${ENV_API_BASE}/courses/delete/${courseId}`,
                 {
                   method: "DELETE",
                   headers: {

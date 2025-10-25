@@ -15,6 +15,7 @@ import { themes } from "../../constants/colors";
 import { getSession } from "../../lib/session";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
+import { API_BASE as ENV_API_BASE } from "@env";
 
 export default function CoursesPage() {
   const [user, setUser] = useState(null);
@@ -29,7 +30,7 @@ export default function CoursesPage() {
 
   const loadCourses = async () => {
     try {
-      const response = await fetch("http://192.168.1.4:5000/courses");
+      const response = await fetch(`${ENV_API_BASE}/courses`);
       const data = await response.json();
       if (response.ok) setCourses(data);
     } catch (error) {
@@ -94,9 +95,9 @@ export default function CoursesPage() {
 
   const onReadMore = (course) => {
     try {
-      router.push({ pathname: "/(institute)/courseDetails", params: { course: JSON.stringify(course) } });
+      router.push({ pathname: "/(institute)/courseDetails", params: { id: String(course.id || course._id || ""), course: JSON.stringify(course) } });
     } catch (e) {
-      navigation?.navigate?.("courseDetails", { course });
+      navigation?.navigate?.("courseDetails", { id: course.id || course._id, course });
     }
   };
 
@@ -114,7 +115,7 @@ export default function CoursesPage() {
               const session = await getSession();
               const token = session?.idToken;
               const courseId = course.id || course._id;
-              const response = await fetch(`http://192.168.1.4:5000/courses/delete/${courseId}` , {
+              const response = await fetch(`${ENV_API_BASE}/courses/delete/${courseId}` , {
                 method: "DELETE",
                 headers: { Authorization: token ? `Bearer ${token}` : "" },
               });
@@ -135,7 +136,10 @@ export default function CoursesPage() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
-      <ScrollView style={[styles.container, { backgroundColor: theme.background }]}> 
+      <ScrollView
+        style={[styles.container, { backgroundColor: theme.background }]}
+        contentContainerStyle={{ paddingBottom: 24 }}
+      > 
       <View style={[styles.headerContainer, styles.headerHero, { backgroundColor: theme.primary }]}>
         <View style={styles.shapeOne} />
         <View style={styles.shapeTwo} />
@@ -262,7 +266,7 @@ export default function CoursesPage() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 15, backgroundColor: '#f4f6f9' },
+  container: { flex: 1, padding: 20, backgroundColor: '#f4f6f9' },
   headerContainer: { padding: 20 },
   headerHero: {
     backgroundColor: '#0d6efd',
