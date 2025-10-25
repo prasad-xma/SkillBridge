@@ -74,8 +74,11 @@ export default function PurchasedScreen() {
         <Text style={[styles.empty, { color: theme.textSecondary }]}>No purchases yet</Text>
       ) : (
         <View style={styles.list}>
-          {items.map((p) => (
-            <View key={p.id} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}> 
+          {items.map((p) => {
+            const diff = (p?.course?.difficulty || '').toLowerCase()
+            const stripeColor = diff.includes('beginner') ? theme.accent : diff.includes('advanced') ? theme.primary : theme.tint
+            return (
+            <View key={p.id} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border, borderLeftWidth: 4, borderLeftColor: stripeColor }]}> 
               <View style={styles.thumbWrap}>
                 {p.course?.thumbnailUrl ? (
                   <Image source={{ uri: p.course.thumbnailUrl }} style={styles.thumb} />
@@ -91,14 +94,14 @@ export default function PurchasedScreen() {
                   {p.course?.category} • {p.course?.difficulty} • {p.course?.duration}
                 </Text>
                 <View style={styles.row}>
-                  <View style={[styles.badge, { borderColor: theme.border }]}> 
-                    <Ionicons name={p.completed ? 'checkmark-circle' : 'time-outline'} size={14} color={theme.textSecondary} />
-                    <Text style={[styles.badgeText, { color: theme.textSecondary }]}>{p.completed ? 'Completed' : 'Incomplete'}</Text>
+                  <View style={[styles.badge, { borderColor: stripeColor + '55', backgroundColor: stripeColor + '14' }]}> 
+                    <Ionicons name={p.completed ? 'checkmark-circle' : 'time-outline'} size={14} color={stripeColor} />
+                    <Text style={[styles.badgeText, { color: stripeColor }]}>{p.completed ? 'Completed' : 'Incomplete'}</Text>
                   </View>
                 </View>
               </View>
             </View>
-          ))}
+          )})}
         </View>
       )}
     </ScrollView>
