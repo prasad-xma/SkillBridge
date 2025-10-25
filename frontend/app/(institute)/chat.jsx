@@ -14,7 +14,7 @@ import Ionicons from '@expo/vector-icons/Ionicons'
 import axios from 'axios'
 import Constants from 'expo-constants'
 import { API_BASE as ENV_API_BASE } from '@env'
-import { GiftedChat } from 'react-native-gifted-chat'
+import { GiftedChat, Bubble, Day } from 'react-native-gifted-chat'
 import dayjs from 'dayjs'
 import { themes } from '../../constants/colors'
 import { getSession } from '../../lib/session'
@@ -199,6 +199,44 @@ export default function InstituteChat() {
               placeholder="Type a reply"
               alwaysShowSend
               renderAvatar={null}
+              renderBubble={(props) => (
+                <Bubble
+                  {...props}
+                  wrapperStyle={{
+                    right: [styles.wpBubbleRight, { backgroundColor: theme.primary }],
+                    left: [styles.wpBubbleLeft, { backgroundColor: theme.card2, borderColor: theme.border, borderWidth: 1 }],
+                  }}
+                  textStyle={{
+                    right: { color: theme.headerText },
+                    left: { color: theme.text },
+                  }}
+                />
+              )}
+              renderDay={(props) => (
+                <View style={styles.wpDayWrap}>
+                  <Day {...props} textStyle={{ color: theme.textSecondary, fontSize: 12, fontWeight: '700' }} />
+                </View>
+              )}
+              renderSend={(props) => {
+                const disabled = !props.text || String(props.text).trim().length === 0
+                return (
+                  <View style={styles.wpSendWrap}>
+                    <TouchableOpacity
+                      disabled={disabled}
+                      onPress={() => props.onSend({ text: String(props.text || '').trim() }, true)}
+                      style={[styles.wpSendBtn, { backgroundColor: disabled ? theme.border : theme.primary }]}
+                      activeOpacity={0.9}
+                    >
+                      <Ionicons name="send" size={18} color={disabled ? theme.textSecondary : theme.headerText} />
+                    </TouchableOpacity>
+                  </View>
+                )
+              }}
+              timeTextStyle={{
+                right: { color: theme.headerText, opacity: 0.8 },
+                left: { color: theme.textSecondary },
+              }}
+              renderChatFooter={() => <View style={{ height: 6 }} />}
               listViewProps={{ style: { backgroundColor: theme.background } }}
             />
           )}
@@ -271,5 +309,35 @@ const styles = StyleSheet.create({
   chatTitle: {
     fontSize: 16,
     fontWeight: '800',
+  },
+  // WhatsApp-like bubble styles
+  wpBubbleRight: {
+    borderRadius: 16,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  wpBubbleLeft: {
+    borderRadius: 16,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  // Day separator wrap
+  wpDayWrap: {
+    paddingVertical: 6,
+  },
+  // Send button area
+  wpSendWrap: {
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+  wpSendBtn: {
+    width: 40,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
   },
 })

@@ -139,6 +139,15 @@ export default function InstituteLayout() {
           title: "Skill Details",
         }}
       />
+
+      <Tabs.Screen
+        name="chat"
+        options={{
+          href: null,
+          headerShown: false,
+          title: "Chat",
+        }}
+      />
     </Tabs>
   );
 }
