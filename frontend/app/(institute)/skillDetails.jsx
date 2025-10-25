@@ -9,10 +9,14 @@ import {
   Dimensions,
   Image,
   FlatList,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { themes } from "../../constants/colors";
+import Constants from "expo-constants";
+import { API_BASE as ENV_API_BASE } from "@env";
+import { getSession } from "../../lib/session";
 
 export default function SkillDetails() {
   const router = useRouter();
@@ -33,6 +37,41 @@ export default function SkillDetails() {
     : null;
 
   const [loading, setLoading] = useState(false);
+
+  const skillId = (skill?.id || skill?._id);
+
+  const onDeleteSkill = () => {
+    if (!skillId) return;
+    Alert.alert(
+      "Delete Skill",
+      "Are you sure you want to delete this skill?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const session = await getSession();
+              const token = session?.idToken || session?.accessToken || session?.token;
+              const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || "";
+              const res = await fetch(`${API_BASE}/skills/delete/${skillId}`, {
+                method: 'DELETE',
+                headers: { Authorization: token ? `Bearer ${token}` : '' },
+              });
+              let data = {};
+              try { data = await res.json(); } catch {}
+              if (!res.ok) throw new Error(data?.message || 'Failed to delete skill');
+              Alert.alert('Deleted', 'Skill deleted successfully');
+              router.back();
+            } catch (e) {
+              Alert.alert('Error', e?.message || 'Could not delete skill');
+            }
+          }
+        }
+      ]
+    );
+  };
 
   if (!skill) {
     return (
@@ -253,18 +292,24 @@ export default function SkillDetails() {
 
       {/* Action Buttons */}
       <View style={styles.actionContainer}>
-        <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: theme.primary }]}
-          onPress={() => {
-            router.push({
-              pathname: "/(institute)/editSkill",
-              params: { skill: JSON.stringify(skill) },
-            });
-          }}
-        >
-          <Ionicons name="create-outline" size={20} color="#fff" />
-          <Text style={styles.actionButtonText}>Edit Skill</Text>
-        </TouchableOpacity>
+        <View style={styles.actionRow}>
+          <TouchableOpacity style={[styles.actionButton, styles.actionButtonDelete]} onPress={onDeleteSkill}>
+            <Ionicons name="trash-sharp" size={20} color="#fff" />
+            <Text style={styles.actionButtonText}>Delete</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: theme.primary }]}
+            onPress={() => {
+              router.push({
+                pathname: "/(institute)/editSkill",
+                params: { skill: JSON.stringify(skill) },
+              });
+            }}
+          >
+            <Ionicons name="create-outline" size={20} color="#fff" />
+            <Text style={styles.actionButtonText}>Edit</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </ScrollView>
   );
@@ -440,6 +485,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 32,
   },
+  actionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   actionButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -451,7 +497,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 3,
+    flex: 1,
   },
+  actionButtonDelete: { backgroundColor: '#ff4d4f' },
   actionButtonText: {
     color: "#fff",
     fontSize: 16,

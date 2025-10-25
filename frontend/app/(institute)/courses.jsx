@@ -95,9 +95,9 @@ export default function CoursesPage() {
 
   const onReadMore = (course) => {
     try {
-      router.push({ pathname: "/(institute)/courseDetails", params: { course: JSON.stringify(course) } });
+      router.push({ pathname: "/(institute)/courseDetails", params: { id: String(course.id || course._id || ""), course: JSON.stringify(course) } });
     } catch (e) {
-      navigation?.navigate?.("courseDetails", { course });
+      navigation?.navigate?.("courseDetails", { id: course.id || course._id, course });
     }
   };
 
