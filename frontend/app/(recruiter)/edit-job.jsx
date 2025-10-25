@@ -20,6 +20,14 @@ export default function RecruiterEditJob() {
     skills: '',
     experience: '',
     description: '',
+    employmentType: '',
+    salaryMin: '',
+    salaryMax: '',
+    status: 'published',
+    remote: '',
+    benefits: '',
+    applicationLink: '',
+    screeningQuestions: '',
   })
 
   const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE
@@ -42,6 +50,14 @@ export default function RecruiterEditJob() {
           skills: Array.isArray(j.skills) ? j.skills.join(', ') : (j.skills || ''),
           experience: j.experience || '',
           description: j.description || '',
+          employmentType: j.employmentType || '',
+          salaryMin: (j.salaryMin != null ? String(j.salaryMin) : ''),
+          salaryMax: (j.salaryMax != null ? String(j.salaryMax) : ''),
+          status: j.status || 'published',
+          remote: j.remote != null ? String(!!j.remote) : '',
+          benefits: Array.isArray(j.benefits) ? j.benefits.join(', ') : (j.benefits || ''),
+          applicationLink: j.applicationLink || '',
+          screeningQuestions: Array.isArray(j.screeningQuestions) ? j.screeningQuestions.join('\n') : (j.screeningQuestions || ''),
         })
       } catch (e) {
         Alert.alert('Error', e?.response?.data?.message || e?.message || 'Failed to load job')
@@ -64,6 +80,14 @@ export default function RecruiterEditJob() {
         skills: form.skills,
         experience: form.experience,
         description: form.description,
+        employmentType: form.employmentType || undefined,
+        salaryMin: form.salaryMin || undefined,
+        salaryMax: form.salaryMax || undefined,
+        status: form.status || undefined,
+        remote: typeof form.remote === 'string' ? (form.remote.toLowerCase() === 'true') : !!form.remote,
+        benefits: form.benefits,
+        applicationLink: form.applicationLink || undefined,
+        screeningQuestions: form.screeningQuestions,
       }
       await axios.put(`${API_BASE}/api/recruiter/jobs/${id}`, payload)
       Alert.alert('Updated', 'Job updated successfully')
@@ -140,6 +164,99 @@ export default function RecruiterEditJob() {
           placeholderTextColor={theme.textSecondary}
           multiline
           numberOfLines={6}
+          style={[styles.textarea, { borderColor: theme.border, color: theme.text, backgroundColor: theme.card }]}
+        />
+
+        {/* Employment Type */}
+        <Text style={[styles.label, { color: theme.text }]}>Employment Type</Text>
+        <TextInput
+          value={form.employmentType}
+          onChangeText={(t) => onChange('employmentType', t)}
+          placeholder="e.g., Full-time, Contract, Internship"
+          placeholderTextColor={theme.textSecondary}
+          style={[styles.input, { borderColor: theme.border, color: theme.text, backgroundColor: theme.card }]}
+        />
+
+        {/* Salary Range */}
+        <Text style={[styles.label, { color: theme.text }]}>Salary Min</Text>
+        <TextInput
+          value={form.salaryMin}
+          onChangeText={(t) => onChange('salaryMin', t)}
+          placeholder="e.g., 600000"
+          keyboardType="numeric"
+          placeholderTextColor={theme.textSecondary}
+          style={[styles.input, { borderColor: theme.border, color: theme.text, backgroundColor: theme.card }]}
+        />
+        <Text style={[styles.label, { color: theme.text }]}>Salary Max</Text>
+        <TextInput
+          value={form.salaryMax}
+          onChangeText={(t) => onChange('salaryMax', t)}
+          placeholder="e.g., 1200000"
+          keyboardType="numeric"
+          placeholderTextColor={theme.textSecondary}
+          style={[styles.input, { borderColor: theme.border, color: theme.text, backgroundColor: theme.card }]}
+        />
+
+        {/* Remote */}
+        <Text style={[styles.label, { color: theme.text }]}>Remote (true/false)</Text>
+        <TextInput
+          value={String(form.remote)}
+          onChangeText={(t) => onChange('remote', t)}
+          placeholder="true or false"
+          autoCapitalize="none"
+          placeholderTextColor={theme.textSecondary}
+          style={[styles.input, { borderColor: theme.border, color: theme.text, backgroundColor: theme.card }]}
+        />
+
+        {/* Status (Radio) */}
+        <Text style={[styles.label, { color: theme.text }]}>Status</Text>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {[
+            { key: 'published', label: 'Publish' },
+            { key: 'archived', label: 'Archive' },
+            { key: 'draft', label: 'Draft' },
+          ].map(opt => (
+            <TouchableOpacity key={opt.key} onPress={() => onChange('status', opt.key)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={{ width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: theme.border, alignItems: 'center', justifyContent: 'center' }}>
+                {form.status === opt.key ? (
+                  <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#6c63ff' }} />
+                ) : null}
+              </View>
+              <Text style={{ color: theme.text }}>{opt.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Benefits */}
+        <Text style={[styles.label, { color: theme.text }]}>Benefits</Text>
+        <TextInput
+          value={form.benefits}
+          onChangeText={(t) => onChange('benefits', t)}
+          placeholder="Comma-separated benefits (e.g., Health Insurance, ESOP)"
+          placeholderTextColor={theme.textSecondary}
+          style={[styles.input, { borderColor: theme.border, color: theme.text, backgroundColor: theme.card }]}
+        />
+
+        {/* Application Link */}
+        <Text style={[styles.label, { color: theme.text }]}>Application Link</Text>
+        <TextInput
+          value={form.applicationLink}
+          onChangeText={(t) => onChange('applicationLink', t)}
+          placeholder="https://..."
+          autoCapitalize="none"
+          placeholderTextColor={theme.textSecondary}
+          style={[styles.input, { borderColor: theme.border, color: theme.text, backgroundColor: theme.card }]}
+        />
+
+        {/* Screening Questions */}
+        <Text style={[styles.label, { color: theme.text }]}>Screening Questions</Text>
+        <TextInput
+          value={form.screeningQuestions}
+          onChangeText={(t) => onChange('screeningQuestions', t)}
+          placeholder={"One question per line"}
+          placeholderTextColor={theme.textSecondary}
+          multiline
+          numberOfLines={4}
           style={[styles.textarea, { borderColor: theme.border, color: theme.text, backgroundColor: theme.card }]}
         />
 
