@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { View, Text, StyleSheet, useColorScheme, FlatList, TouchableOpacity, ScrollView, Alert, Modal } from 'react-native'
+import { View, Text, StyleSheet, useColorScheme, FlatList, TouchableOpacity, ScrollView, Alert, Modal, Linking } from 'react-native'
 import { themes } from '../../constants/colors'
 import { getSession } from '../../lib/session'
 import { router } from 'expo-router'
@@ -93,7 +93,59 @@ export default function RecruiterJobs() {
         console.log('[Recruiter] GET', url)
         const resp = await axios.get(url)
         const arr = Array.isArray(resp.data) ? resp.data : []
-        setApplicantsRaw(arr)
+        const normalize = (a) => {
+          const id = a.id || a.applicantId || a.userId || a.uid || `${a.email || a?.applicant?.email || ''}-${a.jobId || selectedJob.id}`
+          const applicantObj = a.applicant || a.candidate || {}
+          const name = a.name || a.applicantName || applicantObj.name || a.fullName || a.username
+          const email = a.email || a.applicantEmail || applicantObj.email
+          const phone = a.phone || a.mobile || applicantObj.phone
+          const location = a.location || a.city || applicantObj.location
+          const education = a.education || a.qualification || applicantObj.education
+          const experienceYears = a.experienceYears ?? a.experience ?? applicantObj.experienceYears ?? applicantObj.experience
+          const expectedSalary = a.expectedSalary || applicantObj.expectedSalary
+          const skillsRaw = a.applicantSkills || applicantObj.skills || a.skills || a.candidateSkills
+          const skills = Array.isArray(skillsRaw)
+            ? skillsRaw
+            : typeof skillsRaw === 'string'
+            ? skillsRaw.split(',').map(s => s.trim()).filter(Boolean)
+            : []
+          let match = a.matchPercentage ?? a.match ?? a.matchScore ?? a.similarity
+          if (typeof match === 'string') {
+            const m = parseFloat(match)
+            match = Number.isFinite(m) ? m : undefined
+          }
+          if (match != null && match <= 1) match = Math.round(match * 100)
+          if (match != null && match > 1 && match <= 100) match = Math.round(match)
+          // Compute match from CV text if not provided
+          if (match == null || !Number.isFinite(match)) {
+            const jobSkillsRaw = selectedJob?.skills || selectedJob?.requiredSkills || selectedJob?.jobSkills || selectedJob?.tags
+            const jobSkills = Array.isArray(jobSkillsRaw)
+              ? jobSkillsRaw
+              : typeof jobSkillsRaw === 'string'
+              ? jobSkillsRaw.split(',').map(s => s.trim()).filter(Boolean)
+              : []
+            const cvTextRaw = a.cvDescription || a.cvDetails || a.cv || a.resumeText || a.coverLetter || applicantObj.cvDescription || applicantObj.cv
+            if (jobSkills.length && typeof cvTextRaw === 'string' && cvTextRaw.trim().length) {
+              const cvLower = cvTextRaw.toLowerCase()
+              let hits = 0
+              for (const sk of jobSkills) {
+                const s = String(sk).toLowerCase().trim()
+                if (!s) continue
+                // simple containment check; could be improved with regex word-boundaries
+                if (cvLower.includes(s)) hits += 1
+              }
+              match = Math.round((hits / jobSkills.length) * 100)
+            }
+          }
+          if (match == null || !Number.isFinite(match)) match = 0
+          const resumeUrl = a.resumeUrl || a.resume || applicantObj.resumeUrl
+          const portfolioUrl = a.portfolioUrl || applicantObj.portfolioUrl
+          const linkedin = a.linkedin || applicantObj.linkedin
+          const github = a.github || applicantObj.github
+          const status = a.status
+          return { id, name, email, phone, location, education, experienceYears, expectedSalary, skills, matchPercentage: match, resumeUrl, portfolioUrl, linkedin, github, status }
+        }
+        setApplicantsRaw(arr.map(normalize))
       } catch (e) {
         console.warn('[Recruiter] load applicants error', e?.response?.data || e?.message)
         Alert.alert('Failed to fetch applicants', e?.response?.data?.message || e?.message || 'Network error')
@@ -245,8 +297,55 @@ export default function RecruiterJobs() {
               <View style={{ width: '88%', borderRadius: 12, padding: 16, backgroundColor: theme.card, borderWidth: 1, borderColor: theme.border }}>
                 <Text style={{ fontSize: 16, fontWeight: '800', color: theme.text }}>{viewing?.name || 'Applicant'}</Text>
                 <Text style={{ marginTop: 8, color: theme.textSecondary }}>Email: {viewing?.email || '-'}</Text>
+                {viewing?.phone || viewing?.mobile ? (
+                  <Text style={{ marginTop: 4, color: theme.textSecondary }}>Phone: {viewing?.phone || viewing?.mobile}</Text>
+                ) : null}
+                {viewing?.location || viewing?.city ? (
+                  <Text style={{ marginTop: 4, color: theme.textSecondary }}>Location: {viewing?.location || viewing?.city}</Text>
+                ) : null}
+                {viewing?.education || viewing?.qualification ? (
+                  <Text style={{ marginTop: 4, color: theme.textSecondary }}>Education: {viewing?.education || viewing?.qualification}</Text>
+                ) : null}
+                {viewing?.experienceYears != null || viewing?.experience != null ? (
+                  <Text style={{ marginTop: 4, color: theme.textSecondary }}>Experience: {viewing?.experienceYears ?? viewing?.experience} years</Text>
+                ) : null}
+                {viewing?.expectedSalary ? (
+                  <Text style={{ marginTop: 4, color: theme.textSecondary }}>Expected Salary: {viewing?.expectedSalary}</Text>
+                ) : null}
                 <Text style={{ marginTop: 4, color: theme.textSecondary }}>Skills: {Array.isArray(viewing?.skills) ? viewing?.skills?.join(', ') : viewing?.skills || '-'}</Text>
                 <Text style={{ marginTop: 4, color: theme.textSecondary }}>Match: {viewing?.matchPercentage ?? viewing?.match ?? '-'}%</Text>
+                {viewing?.resumeUrl ? (
+                  <Text
+                    style={{ marginTop: 8, color: '#3b82f6', fontWeight: '700' }}
+                    onPress={() => Linking.openURL(viewing?.resumeUrl)}
+                  >
+                    Open Resume
+                  </Text>
+                ) : null}
+                {viewing?.portfolioUrl ? (
+                  <Text
+                    style={{ marginTop: 6, color: '#3b82f6', fontWeight: '700' }}
+                    onPress={() => Linking.openURL(viewing?.portfolioUrl)}
+                  >
+                    Portfolio
+                  </Text>
+                ) : null}
+                {viewing?.linkedin ? (
+                  <Text
+                    style={{ marginTop: 6, color: '#3b82f6', fontWeight: '700' }}
+                    onPress={() => Linking.openURL(viewing?.linkedin)}
+                  >
+                    LinkedIn
+                  </Text>
+                ) : null}
+                {viewing?.github ? (
+                  <Text
+                    style={{ marginTop: 6, color: '#3b82f6', fontWeight: '700' }}
+                    onPress={() => Linking.openURL(viewing?.github)}
+                  >
+                    GitHub
+                  </Text>
+                ) : null}
                 <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16 }}>
                   <TouchableOpacity onPress={() => setViewing(null)} style={{ paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, backgroundColor: '#111827' }}>
                     <Text style={{ color: '#ffffff', fontWeight: '700' }}>Close</Text>
