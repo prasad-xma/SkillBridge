@@ -168,6 +168,14 @@ export default function CoursesScreen() {
       <View style={styles.topActions}>
         <TouchableOpacity
           activeOpacity={0.9}
+          onPress={() => router.push('/(student)/progress')}
+          style={[styles.purchasedBtn, { borderColor: theme.border, backgroundColor: theme.surface }]}
+        >
+          <Ionicons name="bar-chart-outline" size={16} color={theme.text} />
+          <Text style={[styles.purchasedBtnText, { color: theme.text }]}>Progress</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          activeOpacity={0.9}
           onPress={() => router.push('/(student)/purchased')}
           style={[styles.purchasedBtn, { borderColor: theme.border, backgroundColor: theme.surface }]}
         >

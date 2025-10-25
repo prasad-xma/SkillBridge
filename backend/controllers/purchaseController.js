@@ -68,7 +68,35 @@ async function listPurchasesByStudent(req, res) {
   }
 }
 
+async function updatePurchase(req, res) {
+  try {
+    const { purchaseId } = req.params || {};
+    const { completed } = req.body || {};
+
+    if (!purchaseId) {
+      return res.status(400).json({ message: 'purchaseId is required' });
+    }
+
+    const ref = purchasesCollection.doc(purchaseId);
+    const snap = await ref.get();
+    if (!snap.exists) {
+      return res.status(404).json({ message: 'Purchase not found' });
+    }
+
+    const updates = {};
+    if (typeof completed === 'boolean') updates.completed = completed;
+    updates.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+
+    await ref.update(updates);
+    const updated = await ref.get();
+    return res.status(200).json({ id: updated.id, ...updated.data() });
+  } catch (error) {
+    return res.status(500).json({ message: 'Failed to update purchase', error: error.message });
+  }
+}
+
 module.exports = {
   createPurchase,
   listPurchasesByStudent,
+  updatePurchase,
 };
