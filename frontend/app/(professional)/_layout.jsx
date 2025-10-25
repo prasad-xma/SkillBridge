@@ -57,6 +57,13 @@ export default function ProfessionalLayout() {
       }}
     >
       <Tabs.Screen
+        name="chat"
+        options={{
+          // Hide chat from the bottom tab bar, keep it navigable via router.push
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="home"
         options={{
           title: 'Home',
