@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { View, Text, StyleSheet, useColorScheme, FlatList, TouchableOpacity, ScrollView, Modal, Linking } from 'react-native'
+import { View, Text, StyleSheet, useColorScheme, FlatList, TouchableOpacity, ScrollView, Modal, Linking, TextInput } from 'react-native'
 import { themes } from '../../constants/colors'
 import { getSession } from '../../lib/session'
 import { router } from 'expo-router'
@@ -21,6 +21,10 @@ export default function RecruiterJobs() {
   const [toast, setToast] = useState({ visible: false, message: '', type: 'info' })
   const [manageOpen, setManageOpen] = useState(false)
   const [manageStatus, setManageStatus] = useState('published')
+  const [filePctOpen, setFilePctOpen] = useState(false)
+  const [fileText, setFileText] = useState('')
+  const [filePct, setFilePct] = useState(null)
+  const [fileLoading, setFileLoading] = useState(false)
 
   const showToast = (message, type = 'info', duration = 2500) => {
     setToast({ visible: true, message, type })
@@ -28,6 +32,72 @@ export default function RecruiterJobs() {
       setTimeout(() => setToast((t) => ({ ...t, visible: false })), duration)
     }
   }
+  const safeOpenUrl = async (url) => {
+    try {
+      if (typeof url !== 'string') {
+        showToast('Resume URL is invalid', 'error')
+        return
+      }
+      const trimmed = url.trim()
+      if (!/^https?:\/\//i.test(trimmed)) {
+        showToast('Resume URL must start with http(s)://', 'error')
+        return
+      }
+      const can = await Linking.canOpenURL(trimmed)
+      if (!can) {
+        showToast('Cannot open this URL on device', 'error')
+        return
+      }
+      await Linking.openURL(trimmed)
+    } catch (e) {
+      showToast('Failed to open URL', 'error')
+    }
+  }
+
+  const computePercentileFromText = (text, job) => {
+    if (!text || !text.trim()) return 0
+    const jobSkillsRaw = job?.skills || job?.requiredSkills || job?.jobSkills || job?.tags
+    const jobSkills = Array.isArray(jobSkillsRaw)
+      ? jobSkillsRaw
+      : typeof jobSkillsRaw === 'string'
+      ? jobSkillsRaw.split(',').map(s => s.trim()).filter(Boolean)
+      : []
+    if (!jobSkills.length) return 0
+    const cvLower = text.toLowerCase()
+    let hits = 0
+    for (const sk of jobSkills) {
+      const s = String(sk).toLowerCase().trim()
+      if (!s) continue
+      if (cvLower.includes(s)) hits += 1
+    }
+    return Math.round((hits / jobSkills.length) * 100)
+  }
+
+  const handlePercentileFromFile = async () => {
+    try {
+      setFileLoading(true)
+      let text = fileText
+      if ((!text || !text.trim()) && viewing?.resumeUrl && /^https?:\/\//i.test(viewing.resumeUrl)) {
+        // Basic support: fetch plain text files only
+        try {
+          if (/\.txt($|\?)/i.test(viewing.resumeUrl)) {
+            const resp = await fetch(viewing.resumeUrl)
+            text = await resp.text()
+          }
+        } catch (_) {}
+      }
+      if (!text || !text.trim()) {
+        showToast('Provide resume text (paste) or a .txt URL', 'error')
+        setFilePct(null)
+        return
+      }
+      const pct = computePercentileFromText(text, selectedJob)
+      setFilePct(pct)
+    } finally {
+      setFileLoading(false)
+    }
+  }
+
 
   const updateJobStatus = async (jobId, newStatus) => {
     try {
@@ -358,11 +428,16 @@ export default function RecruiterJobs() {
                 {viewing?.resumeUrl ? (
                   <Text
                     style={{ marginTop: 8, color: '#3b82f6', fontWeight: '700' }}
-                    onPress={() => Linking.openURL(viewing?.resumeUrl)}
+                    onPress={() => safeOpenUrl(viewing?.resumeUrl)}
                   >
                     Open Resume
                   </Text>
                 ) : null}
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                  <TouchableOpacity onPress={() => setFilePctOpen(true)} style={{ paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8, backgroundColor: '#3b82f6' }}>
+                    <Text style={{ color: '#fff', fontWeight: '700' }}>Check Percentile (File)</Text>
+                  </TouchableOpacity>
+                </View>
                 {viewing?.portfolioUrl ? (
                   <Text
                     style={{ marginTop: 6, color: '#3b82f6', fontWeight: '700' }}
@@ -395,6 +470,38 @@ export default function RecruiterJobs() {
               </View>
             </View>
           </Modal>
+      {/* Percentile from File/Text Modal */}
+      <Modal visible={filePctOpen} transparent animationType="fade" onRequestClose={() => { setFilePctOpen(false); setFilePct(null); setFileText('') }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ width: '92%', borderRadius: 12, padding: 14, backgroundColor: theme.card, borderWidth: 1, borderColor: theme.border }}>
+            <Text style={{ fontSize: 16, fontWeight: '800', color: theme.text }}>Percentile from File/Text</Text>
+            <Text style={{ marginTop: 8, color: theme.textSecondary }}>
+              Paste resume text below or ensure the resume URL is a .txt file. PDFs are not parsed on-device.
+            </Text>
+            <TextInput
+              value={fileText}
+              onChangeText={setFileText}
+              placeholder="Paste resume text here"
+              placeholderTextColor={theme.textSecondary}
+              multiline
+              style={{ marginTop: 10, minHeight: 140, maxHeight: 260, borderWidth: 1, borderColor: theme.border, borderRadius: 8, padding: 10, color: theme.text }}
+            />
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+              <TouchableOpacity onPress={handlePercentileFromFile} style={{ paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8, backgroundColor: '#16a34a' }}>
+                <Text style={{ color: '#fff', fontWeight: '700' }}>{fileLoading ? 'Calculating...' : 'Calculate'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { setFilePctOpen(false); setFilePct(null); setFileText('') }} style={{ paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8, backgroundColor: '#111827' }}>
+                <Text style={{ color: '#fff', fontWeight: '700' }}>Close</Text>
+              </TouchableOpacity>
+            </View>
+            {filePct != null && (
+              <View style={{ marginTop: 10 }}>
+                <Text style={{ color: theme.text, fontWeight: '800' }}>Percentile: {filePct}%</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
         </View>
       )}
       {/* Toast */}
