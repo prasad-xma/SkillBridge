@@ -42,7 +42,7 @@ export default function CourseDetails() {
     if (!courseId) return;
     try {
       setLoading(true);
-      const res = await fetch(`http://192.168.1.4:5000/courses/${courseId}`);
+      const res = await fetch(`http://192.168.1.3:5000/courses/${courseId}`);
       const data = await res.json();
       if (res.ok) setCourse(data);
     } catch (e) {

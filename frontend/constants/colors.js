@@ -29,7 +29,9 @@ export const lightColors = {
   toastBase: '#111827',
   toastText: '#f9fafb',
   toastSuccess: '#22c55e',
+  toastSuccessBg: 'rgba(34, 197, 94, 0.75)',
   toastError: '#ef4444',
+  toastErrorBg: 'rgba(239, 68, 68, 0.75)',
   toastInfo: '#3b82f6',
   toastShadow: 'rgba(15, 23, 42, 0.18)',
 };
@@ -65,7 +67,9 @@ export const darkColors = {
   toastBase: '#111827',
   toastText: '#f9fafb',
   toastSuccess: '#34d399',
+  toastSuccessBg: 'rgba(52, 211, 153, 0.6)',
   toastError: '#f87171',
+  toastErrorBg: 'rgba(248, 113, 113, 0.6)',
   toastInfo: '#60a5fa',
   toastShadow: 'rgba(0, 0, 0, 0.35)',
 };

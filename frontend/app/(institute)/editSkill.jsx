@@ -93,7 +93,7 @@ export default function EditSkill({ route, navigation }) {
       const token = session?.idToken;
  
       const response = await fetch(
-        `http://192.168.1.4:5000/skills/update/${skillId}`,
+        `http://192.168.1.3:5000/skills/update/${skillId}`,
         {
           method: "PUT",
           headers: {

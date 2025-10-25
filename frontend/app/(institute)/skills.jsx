@@ -16,6 +16,7 @@ import { themes } from "../../constants/colors";
 import { getSession } from "../../lib/session";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
+import { API_BASE as ENV_API_BASE } from "@env";
 
 export default function SkillsHome() {
   const [user, setUser] = useState(null);
@@ -30,7 +31,7 @@ export default function SkillsHome() {
 
   const loadSkills = async () => {
     try {
-      const response = await fetch("http://192.168.1.4:5000/skills");
+      const response = await fetch(`${ENV_API_BASE}/skills`);
       const data = await response.json();
       if (response.ok) setSkills(data);
     } catch (error) {
@@ -96,7 +97,7 @@ export default function SkillsHome() {
               const skillId = skill.id || skill._id; // Use id field from backend
               
               const response = await fetch(
-                `http://192.168.1.4:5000/skills/delete/${skillId}`,
+                `${ENV_API_BASE}/skills/delete/${skillId}`,
                 {
                   method: "DELETE",
                   headers: {

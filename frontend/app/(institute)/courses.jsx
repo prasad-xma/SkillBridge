@@ -15,6 +15,7 @@ import { themes } from "../../constants/colors";
 import { getSession } from "../../lib/session";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
+import { API_BASE as ENV_API_BASE } from "@env";
 
 export default function CoursesPage() {
   const [user, setUser] = useState(null);
@@ -29,7 +30,7 @@ export default function CoursesPage() {
 
   const loadCourses = async () => {
     try {
-      const response = await fetch("http://192.168.1.4:5000/courses");
+      const response = await fetch(`${ENV_API_BASE}/courses`);
       const data = await response.json();
       if (response.ok) setCourses(data);
     } catch (error) {
@@ -114,7 +115,7 @@ export default function CoursesPage() {
               const session = await getSession();
               const token = session?.idToken;
               const courseId = course.id || course._id;
-              const response = await fetch(`http://192.168.1.4:5000/courses/delete/${courseId}` , {
+              const response = await fetch(`${ENV_API_BASE}/courses/delete/${courseId}` , {
                 method: "DELETE",
                 headers: { Authorization: token ? `Bearer ${token}` : "" },
               });
