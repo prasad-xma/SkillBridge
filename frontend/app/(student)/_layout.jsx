@@ -91,6 +91,13 @@ export default function StudentTabsLayout() {
           headerShown: false,
         }}
       />
+      <Tabs.Screen
+        name="purchased"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
     </Tabs>
   )
 }

@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { View, Text, StyleSheet, useColorScheme, ScrollView, TextInput, TouchableOpacity, Image, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, useColorScheme, ScrollView, TextInput, TouchableOpacity, Image, ActivityIndicator, Modal, Alert } from 'react-native'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import axios from 'axios'
 import Constants from 'expo-constants'
+import { router } from 'expo-router'
 import { API_BASE as ENV_API_BASE } from '@env'
 import { themes } from '../../constants/colors'
 import { getSession } from '../../lib/session'
@@ -18,6 +19,13 @@ export default function CoursesScreen() {
   const [query, setQuery] = useState('')
   const [expandedCourses, setExpandedCourses] = useState({})
   const [expandedSkills, setExpandedSkills] = useState({})
+  const [paymentVisible, setPaymentVisible] = useState(false)
+  const [selectedCourse, setSelectedCourse] = useState(null)
+  const [cardNumber, setCardNumber] = useState('')
+  const [cardName, setCardName] = useState('')
+  const [cardExpiry, setCardExpiry] = useState('')
+  const [cardCvv, setCardCvv] = useState('')
+  const [paying, setPaying] = useState(false)
 
   const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || 'http://localhost:5000'
 
@@ -67,6 +75,42 @@ export default function CoursesScreen() {
   useEffect(() => {
     fetchAll()
   }, [])
+
+  const openPayment = (course) => {
+    setSelectedCourse(course)
+    setPaymentVisible(true)
+  }
+
+  const closePayment = () => {
+    setPaymentVisible(false)
+    setSelectedCourse(null)
+    setCardNumber('')
+    setCardName('')
+    setCardExpiry('')
+    setCardCvv('')
+    setPaying(false)
+  }
+
+  const handlePay = async () => {
+    if (!user?.uid || !selectedCourse?.id) {
+      Alert.alert('Error', 'Missing user or course info')
+      return
+    }
+    try {
+      setPaying(true)
+      await axios.post(`${API_BASE}/api/purchases`, {
+        studentId: user.uid,
+        courseId: selectedCourse.id,
+        completed: false,
+      })
+      closePayment()
+      Alert.alert('Success', 'Payment successful. Course added to your purchases.')
+      router.push('/(student)/purchased')
+    } catch (e) {
+      setPaying(false)
+      Alert.alert('Error', 'Failed to process payment')
+    }
+  }
 
   const recommendedCourses = useMemo(() => {
     if (!answers || !Array.isArray(courses)) return []
@@ -121,6 +165,17 @@ export default function CoursesScreen() {
     >
       <Text style={[styles.header, { color: theme.text }]}>Explore Courses & Skills</Text>
 
+      <View style={styles.topActions}>
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={() => router.push('/(student)/purchased')}
+          style={[styles.purchasedBtn, { borderColor: theme.border, backgroundColor: theme.surface }]}
+        >
+          <Ionicons name="bag-check-outline" size={16} color={theme.text} />
+          <Text style={[styles.purchasedBtnText, { color: theme.text }]}>Purchased</Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={[styles.searchWrap, { backgroundColor: theme.surface, borderColor: theme.border }]}> 
         <Ionicons name="search" size={18} color={theme.textSecondary} />
         <TextInput
@@ -149,7 +204,7 @@ export default function CoursesScreen() {
           </View>
           <View style={styles.list}>
             {recommendedFiltered.map((c) => (
-              <CourseCard key={c.id} theme={theme} course={c} expanded={!!expandedCourses[c.id]} onToggle={() => toggleCourse(c.id)} />
+              <CourseCard key={c.id} theme={theme} course={c} expanded={!!expandedCourses[c.id]} onToggle={() => toggleCourse(c.id)} onPurchase={() => openPayment(c)} />
             ))}
           </View>
         </View>
@@ -167,7 +222,7 @@ export default function CoursesScreen() {
         ) : (
           <View style={styles.list}>
             {allCoursesFiltered.map((c) => (
-              <CourseCard key={c.id} theme={theme} course={c} expanded={!!expandedCourses[c.id]} onToggle={() => toggleCourse(c.id)} />
+              <CourseCard key={c.id} theme={theme} course={c} expanded={!!expandedCourses[c.id]} onToggle={() => toggleCourse(c.id)} onPurchase={() => openPayment(c)} />
             ))}
           </View>
         )}
@@ -190,11 +245,59 @@ export default function CoursesScreen() {
           </View>
         )}
       </View>
+      <Modal visible={paymentVisible} transparent animationType="slide" onRequestClose={closePayment}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: theme.card, borderColor: theme.border }]}> 
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Payment Details</Text>
+            <TextInput
+              value={cardNumber}
+              onChangeText={setCardNumber}
+              placeholder="Card Number"
+              placeholderTextColor={theme.textSecondary}
+              keyboardType="number-pad"
+              style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surface }]}
+            />
+            <TextInput
+              value={cardName}
+              onChangeText={setCardName}
+              placeholder="Name on Card"
+              placeholderTextColor={theme.textSecondary}
+              style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.surface }]}
+            />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TextInput
+                value={cardExpiry}
+                onChangeText={setCardExpiry}
+                placeholder="MM/YY"
+                placeholderTextColor={theme.textSecondary}
+                style={[styles.input, { flex: 1, color: theme.text, borderColor: theme.border, backgroundColor: theme.surface }]}
+              />
+              <TextInput
+                value={cardCvv}
+                onChangeText={setCardCvv}
+                placeholder="CVV"
+                placeholderTextColor={theme.textSecondary}
+                secureTextEntry
+                keyboardType="number-pad"
+                style={[styles.input, { flex: 1, color: theme.text, borderColor: theme.border, backgroundColor: theme.surface }]}
+              />
+            </View>
+            <View style={styles.modalActions}>
+              <TouchableOpacity onPress={closePayment} style={[styles.cancelBtn, { borderColor: theme.border }]}> 
+                <Text style={[styles.buyBtnText, { color: theme.text }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity disabled={paying} onPress={handlePay} style={[styles.payBtn, { backgroundColor: theme.primary }]}> 
+                {paying ? <ActivityIndicator color="#fff" /> : <Text style={styles.payBtnText}>Pay</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   )
 }
 
-const CourseCard = ({ theme, course, expanded, onToggle }) => {
+const CourseCard = ({ theme, course, expanded, onToggle, onPurchase }) => {
   const difficulty = (course?.difficulty || '').toString().toLowerCase()
   const stripeColor = difficulty.includes('beginner') ? theme.accent : difficulty.includes('advanced') ? theme.primary : theme.tint
   return (
@@ -251,7 +354,7 @@ const CourseCard = ({ theme, course, expanded, onToggle }) => {
               </View>
             ) : null}
             <View style={styles.actionsRow}>
-              <TouchableOpacity activeOpacity={0.9} style={[styles.buyBtn, { backgroundColor: theme.primary }]}> 
+              <TouchableOpacity activeOpacity={0.9} onPress={onPurchase} style={[styles.buyBtn, { backgroundColor: theme.primary }]}> 
                 <Ionicons name="cart" size={16} color="#fff" />
                 <Text style={styles.buyBtnText}>Purchase</Text>
               </TouchableOpacity>
@@ -322,4 +425,15 @@ const styles = StyleSheet.create({
   buyBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10 },
   buyBtnText: { color: '#fff', fontWeight: '800' },
   skillDesc: { fontSize: 12, marginTop: 6 },
+  topActions: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 10 },
+  purchasedBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
+  purchasedBtnText: { fontSize: 13, fontWeight: '800' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', padding: 16 },
+  modalCard: { width: '100%', borderWidth: 1, borderRadius: 14, padding: 14 },
+  modalTitle: { fontSize: 16, fontWeight: '800', marginBottom: 10 },
+  input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 10, marginBottom: 10, fontSize: 14 },
+  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 6 },
+  cancelBtn: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
+  payBtn: { borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10 },
+  payBtnText: { color: '#fff', fontWeight: '800' },
 })
