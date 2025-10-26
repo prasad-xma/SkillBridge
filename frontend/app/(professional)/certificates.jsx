@@ -175,7 +175,7 @@ export default function Certificates() {
 
 const createStyles = (theme) =>
   StyleSheet.create({
-    container: { padding: 20, gap: 18, backgroundColor: theme.background },
+    container: { padding: 20, gap: 18, backgroundColor: theme.background, paddingBottom: 96 },
     hero: { position: 'relative', padding: 24, borderRadius: 24, overflow: 'hidden', marginBottom: 16 },
     heroGlow: { position: 'absolute', bottom: -110, right: -90, width: 240, height: 240, backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 9999 },
     heroTitle: { fontSize: 26, fontWeight: '700', color: theme.headerText },

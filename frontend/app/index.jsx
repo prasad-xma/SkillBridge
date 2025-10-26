@@ -5,6 +5,22 @@ import React, { useEffect } from 'react'
 import { router } from 'expo-router'
 import { getSession } from '../lib/session'
 import { LinearGradient } from 'expo-linear-gradient'
+import Animated, { 
+  FadeIn, 
+  FadeInUp, 
+  FadeInDown, 
+  SlideInLeft,
+  SlideInRight,
+  BounceIn,
+  ZoomIn,
+  StretchInX,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withSequence,
+  withDelay,
+  runOnJS
+} from 'react-native-reanimated'
 
 const Home = () => {
   useEffect(() => {
@@ -15,6 +31,23 @@ const Home = () => {
       }
     })()
   }, [])
+
+  const scaleValue = useSharedValue(1)
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: scaleValue.value }]
+    }
+  })
+
+  const handlePressIn = () => {
+    scaleValue.value = withSpring(0.95)
+  }
+
+  const handlePressOut = () => {
+    scaleValue.value = withSpring(1)
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['left', 'right']}>
       <StatusBar style="light" backgroundColor="#667eea" />
@@ -24,53 +57,136 @@ const Home = () => {
       >
         <View style={styles.content}>
           {/* Header Section */}
-          <View style={styles.header}>
-            <Text style={styles.welcomeText}>Welcome to</Text>
-            <Text style={styles.appName}>SkillBridge</Text>
-            <Text style={styles.tagline}>Connect, Learn, and Grow Together</Text>
-          </View>
+          <Animated.View 
+            style={styles.header}
+            entering={FadeInDown.duration(800).delay(200)}
+          >
+            <Animated.Text 
+              entering={FadeInUp.duration(600).delay(400)}
+              style={styles.welcomeText}
+            >
+              Welcome to
+            </Animated.Text>
+            <Animated.Text 
+              entering={FadeInUp.duration(600).delay(600)}
+              style={styles.appName}
+            >
+              SkillBridge
+            </Animated.Text>
+            <Animated.Text 
+              entering={FadeInUp.duration(600).delay(800)}
+              style={styles.tagline}
+            >
+              Connect, Learn, and Grow Your Career
+            </Animated.Text>
+          </Animated.View>
 
-          {/* Hero Image Placeholder */}
-          <View style={styles.heroContainer}>
+          {/* Hero Image Section */}
+          <Animated.View 
+            style={styles.heroContainer}
+            entering={BounceIn.duration(1000).delay(1000)}
+          >
             <View style={styles.heroImage}>
-              <Text style={styles.heroText}>🚀</Text>
+              <Animated.Text 
+                entering={ZoomIn.duration(800).delay(1200)}
+                style={styles.heroText}
+              >
+                🌟
+              </Animated.Text>
             </View>
-          </View>
+          </Animated.View>
 
           {/* Features Section */}
-          <View style={styles.featuresContainer}>
-            <View style={styles.featureItem}>
-              <Text style={styles.featureIcon}>💡</Text>
-              <Text style={styles.featureText}>Learn New Skills</Text>
-            </View>
-            <View style={styles.featureItem}>
+          <Animated.View 
+            style={styles.featuresContainer}
+            entering={FadeInUp.duration(800).delay(1400)}
+          >
+            <Animated.View 
+              style={styles.featureItem}
+              entering={SlideInLeft.duration(600).delay(1600)}
+            >
+              <Text style={styles.featureIcon}>🎯</Text>
+              <Text style={styles.featureText}>Personalized Career Paths</Text>
+            </Animated.View>
+            
+            <Animated.View 
+              style={styles.featureItem}
+              entering={FadeInUp.duration(600).delay(1800)}
+            >
+              <Text style={styles.featureIcon}>📊</Text>
+              <Text style={styles.featureText}>Skill Assessment</Text>
+            </Animated.View>
+            
+            <Animated.View 
+              style={styles.featureItem}
+              entering={SlideInRight.duration(600).delay(2000)}
+            >
+              <Text style={styles.featureIcon}>💼</Text>
+              <Text style={styles.featureText}>Job Matching</Text>
+            </Animated.View>
+          </Animated.View>
+
+          {/* Additional Feature Row */}
+          <Animated.View 
+            style={styles.featuresContainer}
+            entering={FadeInUp.duration(800).delay(2200)}
+          >
+            <Animated.View 
+              style={styles.featureItem}
+              entering={SlideInLeft.duration(600).delay(2400)}
+            >
+              <Text style={styles.featureIcon}>🚀</Text>
+              <Text style={styles.featureText}>Career Growth</Text>
+            </Animated.View>
+            
+            <Animated.View 
+              style={styles.featureItem}
+              entering={FadeInUp.duration(600).delay(2600)}
+            >
               <Text style={styles.featureIcon}>🤝</Text>
-              <Text style={styles.featureText}>Connect with Experts</Text>
-            </View>
-            <View style={styles.featureItem}>
+              <Text style={styles.featureText}>Expert Mentors</Text>
+            </Animated.View>
+            
+            <Animated.View 
+              style={styles.featureItem}
+              entering={SlideInRight.duration(600).delay(2800)}
+            >
               <Text style={styles.featureIcon}>📈</Text>
-              <Text style={styles.featureText}>Track Progress</Text>
-            </View>
-          </View>
+              <Text style={styles.featureText}>Progress Tracking</Text>
+            </Animated.View>
+          </Animated.View>
 
           {/* Action Buttons */}
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity 
-              style={styles.primaryButton}
-              onPress={() => router.push('/login')}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.primaryButtonText}>Get Started</Text>
-            </TouchableOpacity>
+          <Animated.View 
+            style={styles.buttonContainer}
+            entering={FadeInUp.duration(800).delay(3000)}
+          >
+            <Animated.View style={animatedStyle}>
+              <TouchableOpacity 
+                style={styles.primaryButton}
+                onPress={() => router.push('/login')}
+                onPressIn={handlePressIn}
+                onPressOut={handlePressOut}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.primaryButtonText}>Discover Your Path</Text>
+              </TouchableOpacity>
+            </Animated.View>
             
-            <TouchableOpacity 
-              style={styles.secondaryButton}
-              onPress={() => router.push('/register')}
-              activeOpacity={0.8}
+            <Animated.View
+              entering={FadeIn.duration(600).delay(3200)}
             >
-              <Text style={styles.secondaryButtonText}>Still not have an account?</Text>
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity 
+                style={styles.secondaryButton}
+                onPress={() => router.push('/register')}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.secondaryButtonText}>
+                  Start Your Journey Today! 🚀
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </Animated.View>
         </View>
       </LinearGradient>
     </SafeAreaView>
@@ -117,39 +233,43 @@ const styles = StyleSheet.create({
   },
   heroContainer: {
     alignItems: 'center',
-    marginVertical: 30,
+    marginVertical: 20,
   },
   heroImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   heroText: {
-    fontSize: 48,
+    fontSize: 60,
   },
   featuresContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginVertical: 30,
+    marginVertical: 15,
     paddingHorizontal: 10,
   },
   featureItem: {
     alignItems: 'center',
     flex: 1,
+    padding: 8,
   },
   featureIcon: {
-    fontSize: 32,
+    fontSize: 28,
     marginBottom: 8,
   },
   featureText: {
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
     textAlign: 'center',
+    lineHeight: 16,
   },
   buttonContainer: {
     marginTop: 'auto',
@@ -157,19 +277,19 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     backgroundColor: '#ffffff',
-    paddingVertical: 16,
+    paddingVertical: 18,
     paddingHorizontal: 32,
-    borderRadius: 25,
+    borderRadius: 30,
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 8,
   },
   primaryButtonText: {
     color: '#667eea',
@@ -181,8 +301,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   secondaryButtonText: {
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: 'rgba(255, 255, 255, 0.9)',
     fontSize: 16,
-    textDecorationLine: 'underline',
+    fontWeight: '600',
+    textDecorationLine: 'none',
   },
 })
