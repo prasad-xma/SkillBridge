@@ -52,7 +52,8 @@ const Home = () => {
     <SafeAreaView style={styles.container} edges={['left', 'right']}>
       <StatusBar style="light" backgroundColor="#667eea" />
       <LinearGradient
-        colors={['#667eea', '#764ba2']}
+        // colors={['#667eea', '#764ba2']}
+        colors={['#667eea', '#ffffffff']}
         style={styles.gradient}
       >
         <View style={styles.content}>
@@ -91,7 +92,12 @@ const Home = () => {
                 entering={ZoomIn.duration(800).delay(1200)}
                 style={styles.heroText}
               >
-                🌟
+                
+                <Image
+                          source={require('../assets/logo/logo.png')}
+                          style={styles.logo}
+                          resizeMode="contain"
+                        />
               </Animated.Text>
             </View>
           </Animated.View>
@@ -301,9 +307,15 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   secondaryButtonText: {
-    color: 'rgba(255, 255, 255, 0.9)',
+    // color: 'rgba(255, 255, 255, 0.9)',
+    color: 'rgba(0, 0, 0, 0.9)',
     fontSize: 16,
     fontWeight: '600',
     textDecorationLine: 'none',
+  },
+  logo: {
+    width: 300,
+    height: 300,
+    // boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
   },
 })

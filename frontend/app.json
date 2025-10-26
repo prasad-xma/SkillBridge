@@ -1,7 +1,7 @@
 {
   "expo": {
     "scheme": "skillbridge",
-    "name": "SkillBridge",
+    "name": "",
     "slug": "frontend",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -22,7 +22,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo/logo_dark.png",
+        "foregroundImage": "./assets/logo/skillBridgeLogodesign.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,

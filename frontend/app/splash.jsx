@@ -58,7 +58,7 @@ const AppSplash = () => {
         ]}
       >
         <Image
-          source={require('../assets/logo/logo_light.png')}
+          source={require('../assets/logo/skillBridgeLogodesign.png')}
           style={styles.logo}
           resizeMode="contain"
         />
@@ -78,8 +78,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logo: {
-    width: 200,
-    height: 200,
+    width: 450,
+    height: 450,
   },
 })
 
