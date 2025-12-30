@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { View, Text, StyleSheet, useColorScheme, TouchableOpacity, ScrollView, ActivityIndicator, Image, Dimensions } from 'react-native'
+import { View, Text, StyleSheet, useColorScheme, TouchableOpacity, ScrollView, ActivityIndicator, Image, Dimensions, Platform } from 'react-native'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { themes } from '../../constants/colors'
@@ -76,7 +76,8 @@ export default function StudentHome() {
   }, [])
 
   const firstName = user?.fullName?.split(' ')?.[0] || 'Student'
-  const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || 'http://localhost:5000'
+  const DEFAULT_API_BASE = Platform.OS === 'android' ? 'http://10.0.2.2:5000' : 'http://127.0.0.1:5000'
+  const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || DEFAULT_API_BASE
 
   const getIdentity = () => {
     if (user?.uid) {

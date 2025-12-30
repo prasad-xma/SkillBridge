@@ -11,7 +11,8 @@ import { saveSession } from '../../lib/session'
 import { router } from 'expo-router'
 import { useToast } from '../components/ToastProvider'
 
-const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || 'http://localhost:5000'
+const DEFAULT_API_BASE = Platform.OS === 'android' ? 'http://10.0.2.2:5000' : 'http://127.0.0.1:5000'
+const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || DEFAULT_API_BASE
 
 const Login = () => {
   const [email, setEmail] = useState('')
