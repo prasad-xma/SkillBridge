@@ -21,6 +21,8 @@ import { themes } from '../../constants/colors'
 import { getSession } from '../../lib/session'
 import { router } from 'expo-router'
 
+const DEFAULT_API_BASE = Platform.OS === 'android' ? 'http://10.0.2.2:5000' : 'http://127.0.0.1:5000'
+
 export default function StudentNetwork() {
   const scheme = useColorScheme()
   const theme = scheme === 'dark' ? themes.dark : themes.light
@@ -35,7 +37,7 @@ export default function StudentNetwork() {
   const [messages, setMessages] = useState([])
   const [loadingMessages, setLoadingMessages] = useState(false)
 
-  const getApiBase = () => ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE
+  const getApiBase = () => ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || DEFAULT_API_BASE
 
   useEffect(() => {
     ;(async () => {

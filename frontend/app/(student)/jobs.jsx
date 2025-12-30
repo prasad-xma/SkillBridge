@@ -14,6 +14,7 @@ import {
   Modal,
   Animated,
   Easing,
+  Platform,
 } from 'react-native'
 import axios from 'axios'
 import Constants from 'expo-constants'
@@ -41,6 +42,8 @@ export default function StudentJobs() {
   const [modalScale] = useState(new Animated.Value(0))
   const [modalOpacity] = useState(new Animated.Value(0))
 
+  const DEFAULT_API_BASE = Platform.OS === 'android' ? 'http://10.0.2.2:5000' : 'http://127.0.0.1:5000'
+
   const appliedJobMap = useMemo(() => {
     const map = {}
     applications.forEach((item) => {
@@ -49,7 +52,7 @@ export default function StudentJobs() {
     return map
   }, [applications])
 
-  const getApiBase = () => ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE
+  const getApiBase = () => ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || DEFAULT_API_BASE
 
   const showSuccessAlert = () => {
     setShowSuccessModal(true)

@@ -10,7 +10,8 @@ import { router } from 'expo-router'
 import { themes } from '../../constants/colors'
 import { getSession } from '../../lib/session'
 
-const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || 'http://localhost:5000'
+const DEFAULT_API_BASE = Platform.OS === 'android' ? 'http://10.0.2.2:5000' : 'http://127.0.0.1:5000'
+const API_BASE = ENV_API_BASE || Constants?.expoConfig?.extra?.API_BASE || DEFAULT_API_BASE
 
 // Hoisted child components (accept theme explicitly) to avoid remounts on parent re-render
 const Section = ({ theme, title, icon, children }) => (
